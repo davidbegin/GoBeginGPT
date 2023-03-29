@@ -21,11 +21,36 @@
 <div id="panorama"></div>
 
 <script>
-pannellum.viewer('panorama', {
-    "type": "equirectangular",
-    "panorama": "https://blockade-platform-production.s3.amazonaws.com/images/imagine/crystal_cave_lit_waterfall_cocaine_bear_magic_mushroom_moose_fight__2c4a3789af1adf87__1075516_2.jpg?ver=1",
-    "autoLoad": true
-});
+  viewer = pannellum.viewer('panorama', {
+      "type": "equirectangular",
+      "panorama": "https://blockade-platform-production.s3.amazonaws.com/images/imagine/highly_detailed_firebreathing_medieval_fantasy_dragon_fire_emitting__c2ddd8dff0826555__1077211_.jpg?ver=1",
+      "autoLoad": true,
+      "autoRotate": 2
+  });
+
+
+  // Function to generate a random number within a given range
+  function getRandomNumberInRange(min, max) {
+      return Math.random() * (max - min) + min;
+  }
+
+  // Function to change yaw and pitch randomly
+  function changeYawAndPitchRandomly() {
+      <!-- var minYaw = -180; -->
+      <!-- var maxYaw = 180; -->
+      var minYaw = -100;
+      var maxYaw = 100;
+      var randomYaw = getRandomNumberInRange(minYaw, maxYaw);
+
+      var minPitch = -90
+      var maxPitch = 90
+      var randomPitch = getRandomNumberInRange(minPitch, maxPitch);
+
+      viewer.setYaw(randomYaw);
+      viewer.setPitch(randomPitch);
+  }
+
+    const timer = setInterval(changeYawAndPitchRandomly, 10000);
 </script>
 
 </body>

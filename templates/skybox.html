@@ -21,11 +21,36 @@
 <div id="panorama"></div>
 
 <script>
-pannellum.viewer('panorama', {
-    "type": "equirectangular",
-    "panorama": "{{ .Url }}",
-    "autoLoad": true
-});
+  viewer = pannellum.viewer('panorama', {
+      "type": "equirectangular",
+      "panorama": "{{ .Url }}",
+      "autoLoad": true,
+      "autoRotate": 2
+  });
+
+
+  // Function to generate a random number within a given range
+  function getRandomNumberInRange(min, max) {
+      return Math.random() * (max - min) + min;
+  }
+
+  // Function to change yaw and pitch randomly
+  function changeYawAndPitchRandomly() {
+      <!-- var minYaw = -180; -->
+      <!-- var maxYaw = 180; -->
+      var minYaw = -100;
+      var maxYaw = 100;
+      var randomYaw = getRandomNumberInRange(minYaw, maxYaw);
+
+      var minPitch = -90
+      var maxPitch = 90
+      var randomPitch = getRandomNumberInRange(minPitch, maxPitch);
+
+      viewer.setYaw(randomYaw);
+      viewer.setPitch(randomPitch);
+  }
+
+    const timer = setInterval(changeYawAndPitchRandomly, 10000);
 </script>
 
 </body>

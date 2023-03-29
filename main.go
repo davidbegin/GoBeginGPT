@@ -417,8 +417,13 @@ func textToVoice(broadcast chan string, content []byte) {
 
 	// voice := "brock-samson"
 	// HILARIOUS
-	voice := "david-bowie"
-	// voice := "shrek"
+	// voice := "david-bowie"
+	// voice := "juice-wrld-singing"
+
+	// voice := "donkey-kong-singing"
+
+	// voice := "david-bowie"
+	voice := "shrek"
 
 	// voice := "sir-david-attenborough"
 	// voice := "c-3po"
