@@ -13,6 +13,8 @@ require (
 	github.com/ebitengine/purego v0.3.0 // indirect
 	github.com/hajimehoshi/ebiten/v2 v2.5.0 // indirect
 	github.com/hajimehoshi/oto/v2 v2.4.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/resemble-ai/resemble-go/v2 v2.0.0-20220303091845-522af330dd87 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 )
 

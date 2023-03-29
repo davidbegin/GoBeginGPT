@@ -23,6 +23,8 @@ import (
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
 	"github.com/gorilla/websocket"
+	"github.com/resemble-ai/resemble-go/v2"
+	"github.com/resemble-ai/resemble-go/v2/request"
 )
 
 const (
@@ -399,8 +401,31 @@ func checkUberduckStatus(uuid string) (*Response, error) {
 
 // ==================================================================================================
 
+func textToVoiceWithResemble(content []byte) {
+	var apiKey string = os.Getenv("RESEMBLE_API_KEY")
+	client := resemble.NewClient(apiKey)
+
+	// voiceUUId := "48d7ed16"
+	// voiceUUId := "25c7823f"
+	voiceUUId := "7f1da153"
+
+	dir, _ := getGrandparentDir()
+	recordingFile := dir + "/tmp/uberduck.wav"
+
+	r, err := client.Recording.Create(voiceUUId, recordingFile, request.Payload{
+		"name":      "test recording",
+		"text":      "transcription",
+		"is_active": true,
+		"emotion":   "neutral",
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%+v \n", r)
+}
+
 // This is really reading in a transcription
-func textToVoice(broadcast chan string, content []byte) {
+func textToVoice(content []byte) {
 	fmt.Printf("\t=== textToVoice ===\n")
 	authHeader := "Basic " + base64.StdEncoding.EncodeToString([]byte(apiKey+":"+apiSecret))
 
@@ -568,7 +593,8 @@ func showAndTell() {
 				fmt.Print("Converting MD to HTML and broadcasting\n")
 
 				// This calls Uberduck
-				textToVoice(broadcast, html)
+				// textToVoice(html)
+				textToVoiceWithResemble(html)
 
 				broadcast <- "done"
 
