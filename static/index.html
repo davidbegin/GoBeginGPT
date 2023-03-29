@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>OBS Character</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div id="dialog-1" class="bubble bubble-bottom-left" contenteditable>
+  </div>
+
+  <img id="seal"
+       class="hide"
+       src="/media/Seal.png"
+       alt="Sappy Seal">
+
+  <div id="spinner" class="spinner"></div>
+
+  <!-- <script src="script.js"></script> -->
+
+	<script>
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+		(function() {
+			const updates = document.getElementById('updates');
+			const socket = new WebSocket('ws://' + location.host + '/ws');
+			
+			socket.addEventListener('message', event => {
+        var dialog = document.getElementById("dialog-1");
+        var Element = document.getElementById("Element");
+        var spinner = document.getElementById("spinner")
+
+        if (event.data == "done") {
+            dialog.classList.remove("popin");
+            seal.classList.remove("popin");
+            dialog.classList.add("popout");
+            seal.classList.add("popout");
+
+            <!-- Spinner ain't happpening right away -->
+            <!-- spinner.classList.remove("hide"); -->
+        } else {
+          // is this not working?????
+          // yeah this!!!
+
+          var dialog = document.getElementById("dialog-1");
+          dialog.innerHTML = "OK NOW"
+          <!-- dialog.innerHTML = event.data -->
+
+          dialog.classList.remove("popout");
+          dialog.classList.remove("hide");
+
+          seal.classList.remove("popout");
+          seal.classList.remove("hide");
+
+          spinner.classList.add("hide");
+
+          dialog.innerHTML = event.data
+
+          dialog.classList.add("popin");
+          seal.classList.add("popin");
+        }
+
+			});
+		})()
+	</script>
+</body>
+</html>

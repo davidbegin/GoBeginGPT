@@ -1,0 +1,33 @@
+{
+    "request": {
+        "id": 791641,
+        "user_id": 1141,
+        "title": "Imagination #791641",
+        "context": null,
+        "prompt": "Computer cyberscape Linux Terminal World",
+        "caption_text": null,
+        "author_name": "beginbot@gmail.com",
+        "alias_id": null,
+        "alias_name": null,
+        "progress": 100,
+        "status": "complete",
+        "queue_position": 1,
+        "file_url": "https://blockade-platform-production.s3.amazonaws.com/images/imagine/computer_cyberscape_linux_terminal_world__f4c9ce2126e52032__791641_f4c.jpg?ver=1",
+        "thumb_url": "https://blockade-platform-production.s3.amazonaws.com/thumbs/imagine/thumb_computer_cyberscape_linux_terminal_world__f4c9ce2126e52032__791641_f4c.jpg?ver=1",
+        "video_url": null,
+        "created_at": "2023-03-14 17:53:46",
+        "updated_at": "2023-03-14 17:54:54",
+        "media_version": 1,
+        "public": 0,
+        "error_message": null,
+        "type": "imaginarium",
+        "generator_data": {
+            "prompt": "Computer cyberscape Linux Terminal World",
+            "negative_text": "",
+            "animation_mode": "skybox"
+        },
+        "generator": "stable-skybox",
+        "dispatched_at": "2023-03-14 17:53:47",
+        "processing_at": "2023-03-14 17:54:35"
+    }
+}
