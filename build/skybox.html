@@ -7,9 +7,15 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
     <style>
+    body {
+         padding: 0;
+         margin: 0;
+         overflow: hidden;
+    }
     #panorama {
-        width: 2000px;
-        height: 1600px;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
     }
     </style>
 </head>
@@ -23,9 +29,10 @@
 <script>
   viewer = pannellum.viewer('panorama', {
       "type": "equirectangular",
-      "panorama": "https://blockade-platform-production.s3.amazonaws.com/images/imagine/cyberpunk_desperate_landscape_full_crime_anxiety_despair_rainfall__93f257af13b569dc__1078448_93.jpg?ver=1",
+      "panorama": "https://blockade-platform-production.s3.amazonaws.com/images/imagine/skybox_infinite_field_artificial_intelligence_rendered_k_dark_sky__08b016ad8d3c7a28__1456237_08.jpg?ver=1",
       "autoLoad": true,
-      "autoRotate": 2
+      "autoRotate": 2,
+      "compass": false
   });
 
 

@@ -3,67 +3,61 @@
 <head>
 	<title>OBS Character</title>
   <link rel="stylesheet" href="styles.css">
+  <meta http-equiv="cache-control" content="no-cache" />
 </head>
 <body>
 
-  <div id="dialog-1" class="bubble bubble-bottom-left" contenteditable>
+
+  <div id="lip_sync_wrapper" class="shake hide">
+    <video class="" id="lip_sync" controls >
+      <source src="/media/green.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
   </div>
 
+  <div id="dialog-1" class="hide bubble bubble-bottom-left" contenteditable></div>
   <img id="seal"
-       class="hide"
+       class="hide shake"
        src="/media/Seal.png"
        alt="Sappy Seal">
 
-  <div id="spinner" class="spinner"></div>
+  <div id="dialog-2" class="hide bubble bubble-bottom-left" contenteditable></div>
+  <img id="snitch"
+       class="hide shake"
+       src="/media/Randall.png"
+       alt="Randall the infamous snitch from the Hit cartoon Recess">
 
-  <!-- <script src="script.js"></script> -->
+  <div id="dialog-3" class="hide bubble bubble-bottom-left" contenteditable></div>
+  <img id="birb"
+       class="hide shake"
+       src="/media/Birb.png"
+       alt="What a Cool Birb">
 
-	<script>
-    function sleep(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
+  <div id="dialog-4" class="hide bubble bubble-bottom-left" contenteditable></div>
+  <img id="c3po"
+       class="hide shake"
+       src="/media/C3PO.png"
+       alt="What a Cool Birb">
 
-		(function() {
-			const updates = document.getElementById('updates');
-			const socket = new WebSocket('ws://' + location.host + '/ws');
-			
-			socket.addEventListener('message', event => {
-        var dialog = document.getElementById("dialog-1");
-        var Element = document.getElementById("Element");
-        var spinner = document.getElementById("spinner")
+  <div id="dialog-5" class="hide bubble bubble-bottom-left" contenteditable></div>
+  <img id="kevin"
+       class="hide shake"
+       src="/media/Kevin.png"
+       alt="He didn't ask to be born">
 
-        if (event.data == "done") {
-            dialog.classList.remove("popin");
-            seal.classList.remove("popin");
-            dialog.classList.add("popout");
-            seal.classList.add("popout");
+  <div id="dialog-6" class="hide bubble bubble-bottom-left" contenteditable></div>
+  <img id="crabs"
+       class="hide shake"
+       src="/media/Crabs.png"
+       alt="Crabs the owner of the Krusty Crabs">
 
-            <!-- Spinner ain't happpening right away -->
-            <!-- spinner.classList.remove("hide"); -->
-        } else {
-          // is this not working?????
-          // yeah this!!!
+  <div id="dialog-7" class="hide bubble bubble-bottom-left" contenteditable></div>
+  <img id="mcguirk"
+       class="hide shake"
+       src="/media/McGuirk.png"
+       alt="He's Coach McGuirk from the Cult Classic Home Movies">
+  <div id="spinner" class="spinner hide"></div>
 
-          var dialog = document.getElementById("dialog-1");
-          dialog.innerHTML = "OK NOW"
-          <!-- dialog.innerHTML = event.data -->
-
-          dialog.classList.remove("popout");
-          dialog.classList.remove("hide");
-
-          seal.classList.remove("popout");
-          seal.classList.remove("hide");
-
-          spinner.classList.add("hide");
-
-          dialog.innerHTML = event.data
-
-          dialog.classList.add("popin");
-          seal.classList.add("popin");
-        }
-
-			});
-		})()
-	</script>
+  <script src="script.js"> </script>
 </body>
 </html>

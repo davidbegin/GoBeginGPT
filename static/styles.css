@@ -9,6 +9,9 @@ body {
 
 body {
   background: #00b140;
+  overflow: hidden;
+  /* width: 1980px; */
+  /* height: 1080px; */
 }
 
 @keyframes pop-out {
@@ -22,7 +25,7 @@ body {
 }
 
 .popin {
-  animation:pop-in 2s;
+  animation:pop-in 0.5s;
 }
 
 .popout {
@@ -32,20 +35,102 @@ body {
   animation-fill-mode: forwards;
 }
 
+.shake {
+  position: relative;
+  animation: shake 1s;
+  animation-iteration-count: infinite;
+}
+
 #seal {
   opacity: 1;
   transition: opacity 0.5s linear;
   width: 300px;
   transform: rotate(25deg);
-
-  /* position: absolute; */
-  /* bottom: 0px; */
-  /* left: 0px; */
-  /* animation: 3s infinite alternate slidein; */
-  /* animation-name: fadeInOut, moveLeft300px, bounce; */
-  /* animation-duration: 2.5s, 5s, 1s; */
-  /* animation-iteration-count: 2, 1, 5; */
+  position: relative;
 }
+#dialog-1 {
+  position: relative;
+}
+
+#snitch {
+  position: relative;
+  z-index: 1;
+  top: -420px;
+}
+#dialog-2 {
+  position: relative;
+  top: -420px;
+}
+
+
+#birb {
+  position: relative;
+  z-index: 1;
+  top: -840px;
+}
+#dialog-3 {
+  position: relative;
+  top: -840px;
+}
+
+#c3po {
+  height: 500px;
+  position: relative;
+  z-index: 1;
+  top: -1240px;
+}
+#dialog-4 {
+  position: relative;
+  top: -1240px;
+}
+
+#kevin {
+  height: 500px;
+  position: relative;
+  z-index: 1;
+  top: -1740px;
+}
+#dialog-5 {
+  position: relative;
+  top: -1740px;
+}
+
+#crabs {
+  height: 500px;
+  height: 500px;
+  position: relative;
+  z-index: 1;
+  top: -2340px;
+}
+#dialog-6 {
+  position: relative;
+  top: -2340px;
+}
+
+#mcguirk {
+  height: 500px;
+  position: relative;
+  z-index: 1;
+  top: -2540px;
+}
+#dialog-7 {
+  position: relative;
+  top: -2540px;
+}
+
+#lip_sync {
+  position: relative;
+  z-index: 1;
+  width: 300px;
+}
+
+#lip_sync_wrapper {
+  /* position: relative; */
+  /* z-index: 1; */
+  /* width: 600px */
+  /* height: 300px */
+}
+
 
 .bubble {
   /* flex-grow: 1; */
@@ -83,16 +168,11 @@ body {
   bottom: -24px;
 }
 
-
-/* --- */
-
 .hide {
   visibility: hidden;
-  /* content-visibility: hidden; */
 }
 
 .show {
-  /* content-visibility: visible; */
   visibility: visible;
 }
 
@@ -111,6 +191,8 @@ body {
   font-size: 220px;
 }
 
+/* -webkit-transform: scaleX(-1); transform: scaleX(-1); */
+
 @keyframes changeContent {
   10% { content: "⠙"; }
   20% { content: "⠹"; }
@@ -121,4 +203,42 @@ body {
   70% { content: "⠧"; }
   80% { content: "⠇"; }
   90% { content: "⠏"; }
+}
+
+/* img:hover { */
+/*   /1* Start the shake animation and make the animation last for 0.5 seconds *1/ */
+/*   animation: shake 5s; */
+
+/*   /1* When the animation is finished, start again *1/ */
+/*   animation-iteration-count: infinite; */
+/* } */
+
+
+/* This is a bigger shake effect */
+/* @keyframes shake { */
+/*   0% { transform: translate(1px, 1px) rotate(0deg); } */
+/*   10% { transform: translate(-5px, -6px) rotate(-1deg); } */
+/*   20% { transform: translate(-5px, 0px) rotate(1deg); } */
+/*   30% { transform: translate(8px, 6px) rotate(0deg); } */
+/*   40% { transform: translate(5px, -5px) rotate(5deg); } */
+/*   50% { transform: translate(-5px, 6px) rotate(-5deg); } */
+/*   60% { transform: translate(-3px, 1px) rotate(0deg); } */
+/*   70% { transform: translate(3px, 1px) rotate(-5deg); } */
+/*   80% { transform: translate(-4px, -5px) rotate(4deg); } */
+/*   90% { transform: translate(5px, 6px) rotate(0deg); } */
+/*   100% { transform: translate(6px, -4px) rotate(-5deg); } */
+/* } */
+
+@keyframes shake  {
+	0% { transform: translate(2px, 1px) rotate(0deg) scale(1); }
+	10% { transform: translate(-1px, -2px) rotate(-1deg); }
+	20% { transform: translate(-3px, 0px) rotate(1deg); }
+	30% { transform: translate(0px, 2px) rotate(0deg); }
+	40% { transform: translate(1px, -1px) rotate(1deg); }
+	50% { transform: translate(-1px, 2px) rotate(-1deg); }
+	60% { transform: translate(-3px, 1px) rotate(0deg)  }
+	70% { transform: translate(2px, 1px) rotate(-1deg); }
+	80% { transform: translate(-1px, -1px) rotate(1deg); }
+	90% { transform: translate(2px, 2px) rotate(0deg); }
+	100% { transform: translate(1px, -2px) rotate(-1deg) }
 }
