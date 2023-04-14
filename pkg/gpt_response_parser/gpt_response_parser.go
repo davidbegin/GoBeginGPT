@@ -24,7 +24,7 @@ func getGrandparentDir() (string, error) {
 	return grandparentDir, nil
 }
 
-func SplitDuet(voiceFile string) {
+func SplitDuet(broadcast chan string, voiceFile string) {
 	dir, err := getGrandparentDir()
 	// We need to read in the duet
 	duetFile := dir + fmt.Sprintf("/tmp/%s", voiceFile)
@@ -77,6 +77,7 @@ func SplitDuet(voiceFile string) {
 
 	fmt.Printf("%s %s", streamCharacter, animationNamespace)
 	go uberduck.TextToVoiceAndAnimate(
+		broadcast,
 		streamCharacter,
 		"snoop-dogg",
 		"verse1.wav",
@@ -85,6 +86,7 @@ func SplitDuet(voiceFile string) {
 	)
 
 	go uberduck.TextToVoiceAndAnimate(
+		broadcast,
 		streamCharacter,
 		"2pac",
 		"verse2.wav",
@@ -93,6 +95,7 @@ func SplitDuet(voiceFile string) {
 	)
 
 	go uberduck.TextToVoiceAndAnimate(
+		broadcast,
 		streamCharacter,
 		"snoop-dogg",
 		"verse3.wav",

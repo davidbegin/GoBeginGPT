@@ -45,7 +45,6 @@ function bringCharactersToLife() {
     
     let lip_sync_wrapper = document.getElementById("lip_sync_wrapper");
 
-
     // When the 
     // video.play()
 
@@ -77,15 +76,17 @@ function bringCharactersToLife() {
     //   // return
     // }
 
-    console.log(character + " | " + dialogText)
+    console.log("Event: " + eventName + " | Character: " + character + " | Dialog: " + dialogText)
 
     let charDiv = document.getElementById(character)
     let dialog = document.getElementById(dialogText);
 
     if (eventName === "done") {
-        console.log("Hide")
+        console.log("Attemping to Hide dialog")
         hideDialog(charDiv, dialog)
     } else if (eventName == "dialog") {
+
+      console.log("We got dialog!")
 
       // Split the string based on whitespace
       const wordsArray = event.data.split(/\s+/);

@@ -17,6 +17,13 @@ import (
 	"beginbot.com/GoBeginGPT/pkg/utils"
 )
 
+// We are in main, this actually goes outside the project
+// the directory above
+var dir, _ = utils.GetGrandparentDir()
+var voiceCharacterFile = dir + "/tmp/voice_character.csv"
+var gptResp = dir + "/tmp/current/chatgpt_response.txt"
+var voiceLoc = dir + "/tmp/current/voice.txt"
+
 var clients = make(map[*websocket.Conn]bool)
 var broadcast = make(chan string)
 var mutex = &sync.Mutex{}
@@ -25,11 +32,9 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-func look4GptRequests() {
+func look4GptRequests(broadcast chan string) {
 	done := make(chan bool)
 
-	dir, _ := utils.GetGrandparentDir()
-	gptResp := dir + "/tmp/current/chatgpt_response.txt"
 	ogGPT, err := ioutil.ReadFile(gptResp)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading OG GPT Response file: %v\n", err)
@@ -46,7 +51,6 @@ func look4GptRequests() {
 				os.Exit(1)
 			}
 
-			voiceLoc := dir + "/tmp/current/voice.txt"
 			_, err = ioutil.ReadFile(voiceLoc)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error reading voice file: %v\n", err)
@@ -55,7 +59,7 @@ func look4GptRequests() {
 
 			// WE need some way knowing it's a duet
 			if string(ogGPT) != string(gpt) {
-				gpt_response_parser.SplitDuet("chatgpt_response.txt")
+				gpt_response_parser.SplitDuet(broadcast, "chatgpt_response.txt")
 			}
 		}
 	}()
@@ -64,13 +68,9 @@ func look4GptRequests() {
 	<-done
 }
 
-func look4VoiceRequests() {
-	dir, _ := utils.GetGrandparentDir()
-
-	// This might still be right
-	// MARK MARK
-	voiceCharacterFile := dir + "/tmp/voice_character.csv"
+func look4VoiceRequests(broadcast chan string) {
 	ticker := time.NewTicker(1 * time.Second)
+
 	for {
 		voice_data := uberduck.ReadAndTruncateVoiceFile(voiceCharacterFile)
 		if len(voice_data) > 0 {
@@ -83,7 +83,7 @@ func look4VoiceRequests() {
 						// Check an overwrite file
 						// overVoice
 						// This needs to take in broadcast
-						uberduck.TextToVoice(character, vd.Voice, vd.Text)
+						uberduck.TextToVoice(broadcast, character, vd.Voice, vd.Text)
 					}
 					broadcast <- fmt.Sprintf("done %s", character)
 				}
@@ -95,13 +95,13 @@ func look4VoiceRequests() {
 }
 
 // This is reall the Webserver that runs
-func showAndTell() {
+func showAndTell(broadcast chan string) {
 	done := make(chan bool)
 
 	// I could also pass done to each of these to wait
-	go look4VoiceRequests()
+	go look4VoiceRequests(broadcast)
 
-	go look4GptRequests()
+	go look4GptRequests(broadcast)
 
 	go handleBroadcast()
 
@@ -175,14 +175,16 @@ func main() {
 	// TODO: Ponder naming all this better
 	webserver := flag.Bool("webserver", false, "Whether to run a Seal Webserver")
 	duet := flag.Bool("duet", false, "Whether to run Duet code")
+
+	// TODO: add taking in the prompt directly
 	prompt_file := flag.String("prompt_file", "prompt.txt", "The file that contains the prompt")
 
 	flag.Parse()
 	if *webserver {
-		showAndTell()
+		showAndTell(broadcast)
 	} else if *duet {
 		gpt_response_parser.SplitScript()
-		gpt_response_parser.SplitDuet("chatgpt_response.txt")
+		gpt_response_parser.SplitDuet(broadcast, "chatgpt_response.txt")
 	} else {
 		b, err := os.ReadFile(*prompt_file)
 		if err != nil {

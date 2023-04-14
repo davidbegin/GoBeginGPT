@@ -90,7 +90,7 @@ func CreateSkyboxPage(url string) {
 		return
 	}
 
-	f, err := os.Create(skyboxResponseFilePath)
+	f, err := os.Create(skyboxWebpageFilepath)
 	if err != nil {
 		fmt.Printf("\nError Creating Build File: %s", err)
 		return
@@ -158,8 +158,9 @@ func parseSkyboxResponse() {
 				panic(err)
 			}
 
-			fmt.Print("Generating Skybox HTML Page!")
+			fmt.Printf("Generating Skybox HTML Page: %s\n", request.FileURL)
 			CreateSkyboxPage(request.FileURL)
+			fmt.Print("Finished Generating HTML Page\n")
 			break
 		}
 
@@ -189,8 +190,8 @@ func requestImage(prompt string) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
 	sb := string(body)
-	log.Printf(sb)
 
 	d1 := []byte(sb)
 

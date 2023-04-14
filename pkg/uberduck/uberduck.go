@@ -21,11 +21,16 @@ import (
 	"github.com/gomarkdown/markdown/parser"
 )
 
-var broadcast = make(chan string)
+var dir, _ = utils.GetGreatGreatGrandparentDir()
 
 // TODO: rename
 var apiKey string = os.Getenv("UBER_DUCK_KEY")
 var apiSecret string = os.Getenv("UBER_DUCK_SECRET")
+
+var voicesFolder = dir + "/tmp/voices"
+
+// TODO: Abstract this
+var animateScript = "/home/begin/code/BeginGPT/animation_scripts/animate.sh"
 
 type UberduckSpeakResponse struct {
 	UUID string `json:"uuid"`
@@ -49,8 +54,7 @@ type UberduckResponse struct {
 	Detail     string `json:"detail"`
 }
 
-func TextToVoice(character string, voice string, contents string) {
-	dir, _ := utils.GetGrandparentDir()
+func TextToVoice(broadcast chan string, character string, voice string, contents string) {
 
 	speakReq := SpeakRequest{
 		Voice:  voice,
@@ -122,8 +126,7 @@ func TextToVoice(character string, voice string, contents string) {
 				os.Exit(1)
 			}
 
-			// TODO: Look at this more!!!!!!!!
-			outputFile := dir + fmt.Sprintf("/../../tmp/voices/%s.wav", voice)
+			outputFile := voicesFolder + fmt.Sprintf("/%s.wav", voice)
 			err = ioutil.WriteFile(outputFile, data, 0644)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error writing the output WAV file: %v\n", err)
@@ -134,15 +137,9 @@ func TextToVoice(character string, voice string, contents string) {
 
 			md := []byte(contents)
 			html := mdToHTML(md)
-			// Does this actually update shit???
-			// this is the actual text
-			// which means we need the
-
-			// We need to save this character
 			broadcast <- fmt.Sprintf("dialog %s %s", character, string(html))
-
-			// This plays the Audio
 			Talk(outputFile)
+
 			break
 		}
 		time.Sleep(3 * time.Second)
@@ -162,7 +159,9 @@ func mdToHTML(md []byte) []byte {
 	return markdown.Render(doc, renderer)
 }
 
+// TODO: Why isn't this working?
 func Talk(soundFile string) string {
+	fmt.Printf("Talk Time!\n")
 	// So this doesn't spawn a new process
 	soundCmd := fmt.Sprintf("play %s", soundFile)
 	output, err := runBashCommand(soundCmd)
@@ -215,15 +214,13 @@ func checkUberduckStatus(voice string, uuid string) (*UberduckResponse, error) {
 // We should pass the:
 //   - name of voicefile we want to save
 func TextToVoiceAndAnimate(
+	broadcast chan string,
 	character string,
 	voice string,
 	voiceFile string,
 	animationNamespace string,
 	contents string,
 ) {
-	dir, _ := utils.GetGrandparentDir()
-
-	// fullScript := splitScript()
 	fullScript := contents
 	// Take the contents
 	// Split into prompt
@@ -315,7 +312,8 @@ func TextToVoiceAndAnimate(
 				os.Exit(1)
 			}
 
-			outputFile := dir + fmt.Sprintf("/../../tmp/voices/%s", voiceFile)
+			outputFile := voicesFolder + fmt.Sprintf("/%s", voiceFile)
+
 			err = ioutil.WriteFile(outputFile, data, 0644)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error writing the output WAV file: %v\n", err)
@@ -324,7 +322,7 @@ func TextToVoiceAndAnimate(
 
 			// 	fmt.Printf("\t~ New Audio File: '%s'\n", outputFile)
 
-			dialogueFile := dir + fmt.Sprintf("/../../tmp/voices/%s.txt", voice)
+			dialogueFile := voicesFolder + fmt.Sprintf("/%s.txt", voice)
 			fmt.Printf("dialogueFile: %s", dialogueFile)
 			err = ioutil.WriteFile(dialogueFile, []byte(fullScript), 0644)
 			if err != nil {
@@ -332,10 +330,7 @@ func TextToVoiceAndAnimate(
 				return
 			}
 
-			// TODO: Abstract Finding this
-			animate := fmt.Sprintf("/home/begin/code/BeginGPT/animation_scripts/animate.sh")
-
-			fmt.Printf("\n\t~~~~ Starting Animation: \n\t%s\n", animate)
+			fmt.Printf("\n\t~~~~ Starting Animation: \n\t%s\n", animateScript)
 
 			simulatedCommand := fmt.Sprintf("animation_scripts/animate %s %s %s\n",
 				voiceFile,
@@ -344,7 +339,7 @@ func TextToVoiceAndAnimate(
 			)
 			fmt.Printf("\n%s\n\n", simulatedCommand)
 
-			cmd := exec.Command("/bin/sh", animate, voiceFile, dialogueFile, animationNamespace)
+			cmd := exec.Command("/bin/sh", animateScript, voiceFile, dialogueFile, animationNamespace)
 
 			var outb, errb bytes.Buffer
 			cmd.Stdout = &outb
