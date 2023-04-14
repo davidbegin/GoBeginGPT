@@ -73,9 +73,9 @@ func requestStatus(id string) Response {
 	var parsedResponse OuterRequest
 	json.Unmarshal(body, &parsedResponse)
 
-	fmt.Printf("Skybox : %d %s", parsedResponse.Response.ID, parsedResponse.Response.Prompt)
 	fmt.Printf(
-		"Updated: %s | Status: %s",
+		"%s\nUpdated: %s | Status: %s\n",
+		parsedResponse.Response.Prompt,
 		parsedResponse.Response.UpdatedAt,
 		parsedResponse.Response.Status,
 	)
@@ -136,7 +136,7 @@ func parseSkyboxResponse() {
 	fmt.Print("\n\t ~~~ Checking Status of Skybox generation ~~~\n\n")
 
 	id := fmt.Sprint(parsedResponse.Response.ID)
-	fmt.Printf("\n\tID: %s", id)
+	fmt.Printf("\n\tID: %s\n", id)
 
 	for {
 		timer := time.NewTimer(5 * time.Second)
@@ -148,13 +148,13 @@ func parseSkyboxResponse() {
 		}
 
 		if request.FileURL != "" {
-			fmt.Printf("Skybox URL: %s", request.FileURL)
+			fmt.Printf("Skybox URL: %s\n", request.FileURL)
 
 			sb := request.FileURL
 			d1 := []byte(sb)
 			err = os.WriteFile(dir+fmt.Sprintf("/skybox_archive/%s.txt", parsedResponse.Response.Prompt[:10]), d1, 0644)
 			if err != nil {
-				fmt.Printf("Errorr Writing to skybox Archive: %+v", err)
+				fmt.Printf("Error Writing to skybox Archive: %+v", err)
 				panic(err)
 			}
 
@@ -163,7 +163,7 @@ func parseSkyboxResponse() {
 			break
 		}
 
-		fmt.Print("\t...Waiting 5 seconds before checking again\n")
+		fmt.Print("...\n\n")
 
 		<-timer.C
 	}
