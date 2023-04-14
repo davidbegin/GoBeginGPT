@@ -8,139 +8,25 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
-	"runtime"
 	"text/template"
 	"time"
+
+	"beginbot.com/GoBeginGPT/pkg/utils"
 )
 
-func main() {
-	fmt.Println("vim-go")
-}
+var SKYBOX_URL = "https://backend.blockadelabs.com/api/v1/imagine"
+var SKYBOX_API_KEY = os.Getenv("SKYBOX_API_KEY")
 
-func getGrandparentDir() (string, error) {
-	_, filename, _, ok := runtime.Caller(1)
-	if !ok {
-		return "", fmt.Errorf("failed to get caller information")
-	}
-	parentDir := filepath.Dir(filename)
-	grandparentDir := filepath.Dir(parentDir)
-	return grandparentDir, nil
-}
+var dir, _ = utils.GetGreatGrandparentDir()
+var skyboxResponseFilePath = dir + "/tmp/skybox_response.json"
+var skyboxWebpageTemplateFilepath = dir + "/templates/skybox.html"
+var skyboxWebpageFilepath = dir + "/build/skybox.html"
 
 type OuterRequest struct {
-	Request Request `json:"request"`
+	Response Response `json:"request"`
 }
 
-func ParseSkyboxRespone() {
-	dir, err := getGrandparentDir()
-	file := dir + "/tmp/skybox_response.json"
-	skyboxResponse, err := os.ReadFile(file)
-	if err != nil {
-		fmt.Print("Error reading Skybox response")
-		panic(err)
-	}
-
-	var parsedResponse OuterRequest
-	json.Unmarshal(skyboxResponse, &parsedResponse)
-
-	fmt.Print("\n\t ~~~ Checking Status of Skybox generation ~~~\n\n")
-
-	id := fmt.Sprint(parsedResponse.Request.ID)
-	fmt.Printf("\n\tID: %s", id)
-
-	for {
-		timer := time.NewTimer(5 * time.Second)
-		request := RequestStatus(id)
-
-		if request.Status == "error" {
-			fmt.Printf("\n\nError in skybox generation!\n\n")
-			break
-		}
-
-		// Go lang
-		// So Where do I save this????
-		// request.Prompt
-		// SO this FILE URL
-		// We need to save it, with the prompt
-		if request.FileURL != "" {
-			fmt.Printf("Skybox URL: %s", request.FileURL)
-
-			// So we don't have the URL HERE!!!
-			// Save URL in the Archive
-			sb := request.FileURL
-			d1 := []byte(sb)
-			err = os.WriteFile(dir+fmt.Sprintf("/skybox_archive/%s.txt", parsedResponse.Request.Prompt[:10]), d1, 0644)
-			if err != nil {
-				fmt.Printf("%+v", err)
-				panic(err)
-			}
-
-			fmt.Print("Generating Skybox HTML Page!")
-			CreateSkyboxPage(request.FileURL)
-			break
-		}
-
-		fmt.Print("\t...Waiting 5 seconds before checking again\n")
-
-		<-timer.C
-	}
-}
-
-func RequestStatus(id string) Request {
-	api_key := os.Getenv("SKYBOX_API_KEY")
-	url := fmt.Sprintf("https://backend.blockadelabs.com/api/v1/imagine/requests/%s?api_key=%s", id, api_key)
-
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	sb := string(body)
-	log.Printf(sb)
-
-	var parsedResponse OuterRequest
-	json.Unmarshal(body, &parsedResponse)
-
-	return parsedResponse.Request
-}
-
-func CreateSkyboxPage(url string) {
-	absPath, err := filepath.Abs(os.Args[0])
-	if err != nil {
-		panic(err)
-	}
-	dirPath := filepath.Dir(absPath)
-
-	tmpl, err := template.ParseFiles(dirPath + "/templates/skybox.html")
-	if err != nil {
-		fmt.Println("\nError Parsing Template File: ", err)
-		return
-	}
-
-	buildFile := dirPath + "/build/skybox.html"
-	f, err := os.Create(buildFile)
-	if err != nil {
-		fmt.Printf("\nError Creating Build File: %s", err)
-		return
-	}
-
-	type SkyboxPage struct {
-		Url string
-	}
-
-	page := SkyboxPage{Url: url}
-	err = tmpl.Execute(f, page)
-	if err != nil {
-		fmt.Printf("Error Executing Template File: %s", err)
-		return
-	}
-}
-
-type Request struct {
+type Response struct {
 	ID            int         `json:"id"`
 	UserID        int         `json:"user_id"`
 	Title         string      `json:"title"`
@@ -172,26 +58,123 @@ type Request struct {
 	UserImaginariumImageLeft int `json:"user_imaginarium_image_left"`
 }
 
-func GenerateSkybox(prompt string) {
-	requestImage(prompt)
-	ParseSkyboxRespone()
+func requestStatus(id string) Response {
+	url := fmt.Sprintf("%s/requests/%s?api_key=%s", SKYBOX_URL, id, SKYBOX_API_KEY)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var parsedResponse OuterRequest
+	json.Unmarshal(body, &parsedResponse)
+
+	fmt.Printf("Skybox : %d %s", parsedResponse.Response.ID, parsedResponse.Response.Prompt)
+	fmt.Printf(
+		"Updated: %s | Status: %s",
+		parsedResponse.Response.UpdatedAt,
+		parsedResponse.Response.Status,
+	)
+
+	return parsedResponse.Response
+}
+
+func CreateSkyboxPage(url string) {
+	tmpl, err := template.ParseFiles(skyboxWebpageTemplateFilepath)
+	if err != nil {
+		fmt.Println("\nError Parsing Template File: ", err)
+		return
+	}
+
+	f, err := os.Create(skyboxResponseFilePath)
+	if err != nil {
+		fmt.Printf("\nError Creating Build File: %s", err)
+		return
+	}
+
+	type SkyboxPage struct {
+		Url string
+	}
+
+	page := SkyboxPage{Url: url}
+	err = tmpl.Execute(f, page)
+	if err != nil {
+		fmt.Printf("Error Executing Template File: %s", err)
+		return
+	}
+}
+
+func requestAll() {
+	url := fmt.Sprintf("%s/myRequests?api_key=%s", SKYBOX_URL, SKYBOX_API_KEY)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	sb := string(body)
+	log.Printf(sb)
+}
+
+func parseSkyboxResponse() {
+	skyboxResponse, err := os.ReadFile(skyboxResponseFilePath)
+	if err != nil {
+		fmt.Print("Error reading Skybox response")
+		panic(err)
+	}
+
+	var parsedResponse OuterRequest
+	json.Unmarshal(skyboxResponse, &parsedResponse)
+
+	fmt.Print("\n\t ~~~ Checking Status of Skybox generation ~~~\n\n")
+
+	id := fmt.Sprint(parsedResponse.Response.ID)
+	fmt.Printf("\n\tID: %s", id)
+
+	for {
+		timer := time.NewTimer(5 * time.Second)
+		request := requestStatus(id)
+
+		if request.Status == "error" {
+			fmt.Printf("\n\nError in skybox generation!\n\n")
+			break
+		}
+
+		if request.FileURL != "" {
+			fmt.Printf("Skybox URL: %s", request.FileURL)
+
+			sb := request.FileURL
+			d1 := []byte(sb)
+			err = os.WriteFile(dir+fmt.Sprintf("/skybox_archive/%s.txt", parsedResponse.Response.Prompt[:10]), d1, 0644)
+			if err != nil {
+				fmt.Printf("Errorr Writing to skybox Archive: %+v", err)
+				panic(err)
+			}
+
+			fmt.Print("Generating Skybox HTML Page!")
+			CreateSkyboxPage(request.FileURL)
+			break
+		}
+
+		fmt.Print("\t...Waiting 5 seconds before checking again\n")
+
+		<-timer.C
+	}
 }
 
 func requestImage(prompt string) {
-	api_key := os.Getenv("SKYBOX_API_KEY")
-
-	// TODO: extract out base URL
-	// webhook_url := "https://bc26-47-151-134-189.ngrok.io/hello"
-	requestsURL := fmt.Sprintf("https://backend.blockadelabs.com/api/v1/imagine/requests?api_key=%s", api_key)
-
-	// b, err := os.ReadFile(*prompt_file)
-	// prompt := string(b)
-	// fmt.Printf("%+v", prompt)
+	requestsURL := fmt.Sprintf("%s/requests?api_key=%s", SKYBOX_URL, SKYBOX_API_KEY)
 
 	postBody, _ := json.Marshal(map[string]string{
 		"prompt":    prompt,
 		"generator": "stable-skybox",
-		// "api_key":   api_key,
 		// "aspect":    "landscape",
 		// "webhook_url": "https://f7a0-47-151-134-189.ngrok.io/hello",
 	})
@@ -211,10 +194,7 @@ func requestImage(prompt string) {
 
 	d1 := []byte(sb)
 
-	dir, err := getGrandparentDir()
-
-	// We need to make sure this is consistent
-	err = os.WriteFile(dir+"/tmp/skybox_response.json", d1, 0644)
+	err = os.WriteFile(skyboxResponseFilePath, d1, 0644)
 
 	if err != nil {
 		fmt.Printf("%+v", err)
@@ -222,19 +202,7 @@ func requestImage(prompt string) {
 	}
 }
 
-func requestAll() {
-	api_key := os.Getenv("SKYBOX_API_KEY")
-
-	url := fmt.Sprintf("https://backend.blockadelabs.com/api/v1/imagine/myRequests?api_key=%s", api_key)
-
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	sb := string(body)
-	log.Printf(sb)
+func GenerateSkybox(prompt string) {
+	requestImage(prompt)
+	parseSkyboxResponse()
 }
