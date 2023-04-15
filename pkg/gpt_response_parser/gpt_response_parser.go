@@ -1,33 +1,34 @@
 package gpt_response_parser
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
+	"html/template"
 	"io/ioutil"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 
 	"beginbot.com/GoBeginGPT/pkg/skybox"
 	"beginbot.com/GoBeginGPT/pkg/uberduck"
+	"beginbot.com/GoBeginGPT/pkg/utils"
 )
 
-func getGrandparentDir() (string, error) {
-	_, filename, _, ok := runtime.Caller(1)
-	if !ok {
-		return "", fmt.Errorf("failed to get caller information")
-	}
-	parentDir := filepath.Dir(filename)
-	grandparentDir := filepath.Dir(parentDir)
-	return grandparentDir, nil
-}
+var outerDir, _ = utils.GetGreatGreatGrandparentDir()
+var dir, _ = utils.GetGreatGrandparentDir()
+
+var combineScript = "/home/begin/code/BeginGPT/animate_scripts/combine_videos.sh"
+var ffmpegFileListPath = outerDir + "/animate_scripts/videos.txt"
+var chatgptResponseFilepath = outerDir + "/tmp/duet.txt"
+
+// var chatgptResponseFilepath = dir + "/tmp/chatgpt_response.txt"
 
 func SplitDuet(broadcast chan string, voiceFile string) {
-	dir, err := getGrandparentDir()
-	// We need to read in the duet
-	duetFile := dir + fmt.Sprintf("/tmp/%s", voiceFile)
+	duetFile := outerDir + fmt.Sprintf("/tmp/%s", voiceFile)
+
 	duet, err := ioutil.ReadFile(duetFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading Duet file: %v\n", err)
@@ -47,11 +48,7 @@ func SplitDuet(broadcast chan string, voiceFile string) {
 	lines = strings.Split(verse2, verseThreeSplitter)
 	verse2 = lines[0]
 
-	// lines = strings.Split(strings.Join(lines, " "), verseThreeSplitter)
 	verse3 := lines[1]
-
-	// fmt.Println("\n~~ -----------------------")
-	// panic(verse3)
 
 	verse1 = strings.ReplaceAll(verse1, chorusLine, "")
 	verse1 = strings.ReplaceAll(verse1, verseOneSplitter, "")
@@ -62,98 +59,107 @@ func SplitDuet(broadcast chan string, voiceFile string) {
 	verse3 = strings.ReplaceAll(verse3, chorusLine, "")
 	verse3 = strings.ReplaceAll(verse3, verseThreeSplitter, "")
 
-	// done := make(chan bool, 3)
-	done := make(chan bool)
 	fmt.Printf("%s", verse1)
 	fmt.Printf("---------------------")
 	fmt.Printf("%s", verse2)
 	fmt.Printf("---------------------")
 	fmt.Printf("%s", verse3)
-	// GO GO GO!!!!
-	// So we need to save different
 
 	streamCharacter := "seal"
-	animationNamespace := "verse1"
+	animationNamespace := "verse"
 
-	fmt.Printf("%s %s", streamCharacter, animationNamespace)
-	go uberduck.TextToVoiceAndAnimate(
-		broadcast,
-		streamCharacter,
-		"snoop-dogg",
-		"verse1.wav",
-		"verse1",
-		verse1,
-	)
+	type Verse struct {
+		Name      string
+		Content   string
+		Character string
+		Voice     string
+	}
 
-	go uberduck.TextToVoiceAndAnimate(
-		broadcast,
-		streamCharacter,
-		"2pac",
-		"verse2.wav",
-		"verse2",
-		verse2,
-	)
+	verses := []Verse{
+		{
+			Content:   verse1,
+			Voice:     "snoop-dogg",
+			Character: streamCharacter,
+		},
+		{
+			Content:   verse2,
+			Voice:     "2pac",
+			Character: streamCharacter,
+		},
+		{
+			Content:   verse3,
+			Voice:     "snoop-dogg",
+			Character: streamCharacter,
+		},
+	}
 
-	go uberduck.TextToVoiceAndAnimate(
-		broadcast,
-		streamCharacter,
-		"snoop-dogg",
-		"verse3.wav",
-		"verse3",
-		verse3,
-	)
+	var Files = []string{}
 
-	// When does the browser refresh cache
+	for i, verse := range verses {
+		// TODO: better name
+		verseInfo := fmt.Sprintf("%s_%d", animationNamespace, i)
+		verseFile := fmt.Sprintf("%s.wav", verseInfo)
 
-	<-done
-	// How do we make sure this waits for all
-	// I could pass in a chan with 3 message
-	// Now I need to process each of these
+		go uberduck.TextToVoiceAndAnimate(
+			broadcast,
+			verse.Character,
+			verse.Voice,
+			verseFile,
+			verseInfo,
+			verse.Content,
+		)
+
+		media, _ := filepath.Abs(dir + fmt.Sprintf("/static/media/%s.mp4", verseInfo))
+		Files = append(Files, media)
+	}
+
+	// ===========================================
+
+	tmpl, err := template.New("ffmpeg File visit").Parse("{{range $val := .}} file '{{$val}}'\n{{end}}")
+	if err != nil {
+		panic(err)
+	}
+
+	var ffmpegFileList bytes.Buffer
+	err = tmpl.Execute(&ffmpegFileList, Files)
+	if err != nil {
+		panic(err)
+	}
+
+	err = ioutil.WriteFile(ffmpegFileListPath, []byte(ffmpegFileList.String()), 0644)
+
+	// Call the combine script after the file is created
+	cmd := exec.Command("/bin/sh", combineScript)
+	var outb, errb bytes.Buffer
+	cmd.Stdout = &outb
+	cmd.Stderr = &errb
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// <-done
 }
 
 func SplitScript() string {
-	dir, _ := getGrandparentDir()
-	fileName := dir + "/tmp/chatgpt_response.txt"
-
-	lines, err := readFile(fileName)
+	lines, err := utils.ReadFile(chatgptResponseFilepath)
 	if err != nil {
 		fmt.Println("Error reading file:", err)
 		return ""
 	}
 
-	script, stageDirection := splitAndSort(lines)
+	script, stageDirection := splitAndSortParenthesis(lines)
 
 	if len(stageDirection) > 1 {
 		prompt := stageDirection[0]
-		fmt.Println("prompt: %s", prompt)
+		fmt.Printf("prompt: %s\n", prompt)
 		go skybox.GenerateSkybox(prompt)
 	}
 
-	// So now we recombine:
-
 	fullScript := strings.Join(script, " ")
 	return fullScript
-	// for _, line := range script {
-	// 	fmt.Println(line)
-	// }
 }
 
-func readFile(fileName string) ([]string, error) {
-	file, err := os.Open(fileName)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var lines []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	return lines, scanner.Err()
-}
-
-func splitAndSort(lines []string) ([]string, []string) {
+func splitAndSortParenthesis(lines []string) ([]string, []string) {
 	var parenthLines []string
 	var nonParenthLines []string
 

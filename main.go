@@ -17,8 +17,7 @@ import (
 	"beginbot.com/GoBeginGPT/pkg/utils"
 )
 
-// We are in main, this actually goes outside the project
-// the directory above
+// We are in main, this actually goes outside the project the directory above
 var dir, _ = utils.GetGrandparentDir()
 var voiceCharacterFile = dir + "/tmp/voice_character.csv"
 var gptResp = dir + "/tmp/current/chatgpt_response.txt"
@@ -57,7 +56,6 @@ func look4GptRequests(broadcast chan string) {
 				os.Exit(1)
 			}
 
-			// WE need some way knowing it's a duet
 			if string(ogGPT) != string(gpt) {
 				gpt_response_parser.SplitDuet(broadcast, "chatgpt_response.txt")
 			}
@@ -79,12 +77,12 @@ func look4VoiceRequests(broadcast chan string) {
 				if i > 0 {
 					character := uberduck.RandomVoiceToCharacter(vd.Voice)
 					if string(vd.Text[0]) != "!" {
-
 						// Check an overwrite file
-						// overVoice
+						// OverVoice
 						// This needs to take in broadcast
 						uberduck.TextToVoice(broadcast, character, vd.Voice, vd.Text)
 					}
+
 					broadcast <- fmt.Sprintf("done %s", character)
 				}
 			}
@@ -94,15 +92,12 @@ func look4VoiceRequests(broadcast chan string) {
 	}
 }
 
-// This is reall the Webserver that runs
 func showAndTell(broadcast chan string) {
 	done := make(chan bool)
 
 	// I could also pass done to each of these to wait
 	go look4VoiceRequests(broadcast)
-
 	go look4GptRequests(broadcast)
-
 	go handleBroadcast()
 
 	fmt.Println("Server is listening on :8080")
@@ -131,8 +126,8 @@ func handleBroadcast() {
 	for {
 		content := <-broadcast
 
-		// qwertywert_: Hey is it because on the retry, you add back to clients[], so outer keeps looping back in?
 		mutex.Lock()
+
 		for client := range clients {
 			err := client.WriteMessage(websocket.TextMessage, []byte(content))
 
@@ -154,7 +149,7 @@ func handleBroadcast() {
 						mutex.Lock()
 						clients[conn] = true
 						mutex.Unlock()
-						fmt.Println("Successfully reconnected to WebSocket.")
+						fmt.Println("Successfully Connected to WebSocket.")
 
 						err = conn.WriteMessage(websocket.TextMessage, []byte(content))
 						if err != nil {
@@ -183,8 +178,9 @@ func main() {
 	if *webserver {
 		showAndTell(broadcast)
 	} else if *duet {
-		gpt_response_parser.SplitScript()
-		gpt_response_parser.SplitDuet(broadcast, "chatgpt_response.txt")
+		// gpt_response_parser.SplitScript()
+		gpt_response_parser.SplitDuet(broadcast, "duet.txt")
+		// gpt_response_parser.SplitDuet(broadcast, "chatgpt_response.txt")
 	} else {
 		b, err := os.ReadFile(*prompt_file)
 		if err != nil {
