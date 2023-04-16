@@ -100,6 +100,8 @@ func showAndTell(broadcast chan string) {
 	go look4GptRequests(broadcast)
 	go handleBroadcast()
 
+	// I need to call something different
+	// So the context of the mutex is here
 	fmt.Println("Server is listening on :8080")
 	http.HandleFunc("/ws", websocketHandler)
 	http.Handle("/", http.FileServer(http.Dir("static")))
@@ -178,7 +180,6 @@ func main() {
 	if *webserver {
 		showAndTell(broadcast)
 	} else if *duet {
-		// gpt_response_parser.SplitScript()
 		gpt_response_parser.SplitDuet(broadcast, "duet.txt")
 		// gpt_response_parser.SplitDuet(broadcast, "chatgpt_response.txt")
 	} else {
