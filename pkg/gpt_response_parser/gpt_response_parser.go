@@ -59,14 +59,14 @@ func SplitDuet(broadcast chan string, voiceFile string) {
 	verse3 = strings.ReplaceAll(verse3, chorusLine, "")
 	verse3 = strings.ReplaceAll(verse3, verseThreeSplitter, "")
 
-	fmt.Printf("%s", verse1)
-	fmt.Printf("---------------------")
-	fmt.Printf("%s", verse2)
-	fmt.Printf("---------------------")
-	fmt.Printf("%s", verse3)
+	// fmt.Printf("%s", verse1)
+	// fmt.Printf("---------------------")
+	// fmt.Printf("%s", verse2)
+	// fmt.Printf("---------------------")
+	// fmt.Printf("%s", verse3)
 
 	streamCharacter := "seal"
-	animationNamespace := "verse"
+	animationNamespace := "duet"
 
 	type Verse struct {
 		Name      string
@@ -95,23 +95,36 @@ func SplitDuet(broadcast chan string, voiceFile string) {
 
 	var Files = []string{}
 
+	// We must make sure animationName space folder exists
+
+	// do I have an abs
+	animationFolder, err := filepath.Abs(outerDir + "/" + animationNamespace)
+	if err != nil {
+		fmt.Printf("Error Finding Absolute animation Folder: %+v", err)
+		return
+	}
+
+	os.MkdirAll(animationFolder, os.ModePerm)
+
 	for i, verse := range verses {
-		// TODO: better name
-		verseInfo := fmt.Sprintf("%s_%d", animationNamespace, i)
-		verseFile := fmt.Sprintf("%s.wav", verseInfo)
+
+		// This should be a voice!!!!
+		voiceFile := fmt.Sprintf("%s_%d", verse.Voice, i)
 
 		go uberduck.TextToVoiceAndAnimate(
 			broadcast,
 			verse.Character,
 			verse.Voice,
-			verseFile,
-			verseInfo,
+			voiceFile,
+			animationNamespace,
 			verse.Content,
 		)
 
-		media, _ := filepath.Abs(dir + fmt.Sprintf("/static/media/%s.mp4", verseInfo))
+		media, _ := filepath.Abs(dir + fmt.Sprintf("/static/media/%s.mp4", voiceFile))
 		Files = append(Files, media)
 	}
+	done := make(chan bool)
+	<-done
 
 	// ===========================================
 

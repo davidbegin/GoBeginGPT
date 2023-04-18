@@ -65,7 +65,8 @@ func TextToVoice(
 	response := requestImageFromUberduck(character, voice, contents)
 
 	for {
-		outputFile, err := pollForFinishedUberduck(voice, response.UUID)
+		filename := fmt.Sprintf("%s.wav", voice)
+		outputFile, err := pollForFinishedUberduck(voice, filename, response.UUID)
 
 		if err != nil {
 			fmt.Println("Error from Uberduck: ", err)
@@ -93,10 +94,13 @@ func TextToVoiceAndAnimate(
 	animationNamespace string,
 	contents string,
 ) {
+
 	response := requestImageFromUberduck(character, voice, contents)
+	dialogueFile := voicesFolder + fmt.Sprintf("/%s/%s.txt", animationNamespace, voiceFile)
 
 	for {
-		outputFile, err := pollForFinishedUberduck(voice, response.UUID)
+		wavFile := fmt.Sprintf("%s/%s.wav", animationNamespace, voiceFile)
+		outputFile, err := pollForFinishedUberduck(voice, wavFile, response.UUID)
 
 		if err != nil {
 			fmt.Println("Error from Uberduck: ", err)
@@ -104,7 +108,8 @@ func TextToVoiceAndAnimate(
 		}
 
 		if outputFile != "" {
-			dialogueFile := voicesFolder + fmt.Sprintf("/%s.txt", voice)
+			// I don't need .wav
+			// dialogueFile := voicesFolder + fmt.Sprintf("/%s", filename)
 			err = ioutil.WriteFile(dialogueFile, []byte(contents), 0644)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error writing the output file: %v\n", err)
@@ -192,7 +197,8 @@ func requestImageFromUberduck(
 	return response
 }
 
-func pollForFinishedUberduck(voice string, uuid string) (string, error) {
+// This needs a namespace
+func pollForFinishedUberduck(voice string, filename string, uuid string) (string, error) {
 	uberduckStatus, err := checkUberduckStatus(voice, uuid)
 	outputFile := ""
 
@@ -217,7 +223,7 @@ func pollForFinishedUberduck(voice string, uuid string) (string, error) {
 			os.Exit(1)
 		}
 
-		outputFile := voicesFolder + fmt.Sprintf("/%s.wav", voice)
+		outputFile := voicesFolder + fmt.Sprintf("/%s", filename)
 		err = ioutil.WriteFile(outputFile, data, 0644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing the output WAV file: %v\n", err)
