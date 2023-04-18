@@ -26,6 +26,19 @@ type OuterRequest struct {
 	Response Response `json:"request"`
 }
 
+type SkyboxStyle struct {
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	MaxChar   string `json:"max-char"`
+	Image     string `json:"image"`
+	SortOrder int    `json:"sort_order"`
+}
+
+// "id": 5,
+// "name": "Digital Painting",
+// "max-char": "420",
+// "image": null,
+// "sort_order": 1
 type Response struct {
 	ID            int         `json:"id"`
 	UserID        int         `json:"user_id"`
@@ -173,6 +186,7 @@ func parseSkyboxResponse() {
 func requestImage(prompt string) {
 	requestsURL := fmt.Sprintf("%s/requests?api_key=%s", SKYBOX_URL, SKYBOX_API_KEY)
 
+	// skybox_style_id
 	postBody, _ := json.Marshal(map[string]string{
 		"prompt":    prompt,
 		"generator": "stable-skybox",
@@ -200,6 +214,79 @@ func requestImage(prompt string) {
 	if err != nil {
 		fmt.Printf("%+v", err)
 		panic(err)
+	}
+}
+
+func RequestAllStyles() {
+	baseURL := "https://backend.blockadelabs.com/api/v1/skybox/styles"
+
+	url := fmt.Sprintf("%s?api_key=%s", baseURL, SKYBOX_API_KEY)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	// sb := string(body)
+	// log.Printf(sb)
+
+	styleFile := dir + "/tmp/skybox_styles.json"
+
+	var styles []SkyboxStyle
+
+	err = json.Unmarshal(body, &styles)
+	if err != nil {
+		fmt.Printf("Error parsing Skybox Styles JSON")
+	}
+
+	err = os.WriteFile(styleFile, body, 0644)
+	if err != nil {
+		fmt.Printf("Error writing Skybox Styles")
+	}
+
+	var chatResponse string
+	chunkCount := 0
+
+	for i, style := range styles {
+		chunkCount += 1
+
+		if i < 1 {
+			chatResponse = fmt.Sprintf("%d - %s", style.ID, style.Name)
+		} else {
+
+			if chatResponse == "" {
+				// Don't include the comma is the chunkCount == 1
+				chatResponse = fmt.Sprintf("%d = %s", style.ID, style.Name)
+			} else {
+				// Don't include the comma is the chunkCount == 1
+				chatResponse = fmt.Sprintf("%s, %d = %s", chatResponse, style.ID, style.Name)
+			}
+
+			if chunkCount > 5 {
+				styleOpts := fmt.Sprintf("beginbot %s", chatResponse)
+				output, err := utils.RunBashCommand(styleOpts)
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Printf(output)
+				chatResponse = ""
+				chunkCount = 0
+			}
+
+			if (i+1) == len(styles) && chunkCount < 5 {
+				styleOpts := fmt.Sprintf("beginbot %s", chatResponse)
+				output, err := utils.RunBashCommand(styleOpts)
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Printf(output)
+				chatResponse = ""
+				chunkCount = 0
+			}
+		}
 	}
 }
 

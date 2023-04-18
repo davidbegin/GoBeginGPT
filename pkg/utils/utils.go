@@ -68,7 +68,7 @@ func Talk(soundFile string) string {
 	fmt.Printf("Talk Time!\n")
 	// So this doesn't spawn a new process
 	soundCmd := fmt.Sprintf("play %s", soundFile)
-	output, err := runBashCommand(soundCmd)
+	output, err := RunBashCommand(soundCmd)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func Talk(soundFile string) string {
 }
 
 // This & didn't do anything
-func runBashCommand(command string) (string, error) {
+func RunBashCommand(command string) (string, error) {
 	cmd := exec.Command("bash", "-c", command, "&")
 	outputBytes, err := cmd.Output()
 	if err != nil {

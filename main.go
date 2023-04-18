@@ -172,6 +172,7 @@ func main() {
 	// TODO: Ponder naming all this better
 	webserver := flag.Bool("webserver", false, "Whether to run a Seal Webserver")
 	duet := flag.Bool("duet", false, "Whether to run Duet code")
+	skybox_styles := flag.Bool("skybox_styles", false, "Whether to query for all Skybox Styles")
 
 	// TODO: add taking in the prompt directly
 	prompt_file := flag.String("prompt_file", "prompt.txt", "The file that contains the prompt")
@@ -179,6 +180,8 @@ func main() {
 	flag.Parse()
 	if *webserver {
 		showAndTell(broadcast)
+	} else if *skybox_styles {
+		skybox.RequestAllStyles()
 	} else if *duet {
 		gpt_response_parser.SplitDuet(broadcast, "duet.txt")
 		// gpt_response_parser.SplitDuet(broadcast, "chatgpt_response.txt")
