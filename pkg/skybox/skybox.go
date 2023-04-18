@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"text/template"
 	"time"
 
@@ -186,10 +187,43 @@ func parseSkyboxResponse() {
 func requestImage(prompt string) {
 	requestsURL := fmt.Sprintf("%s/requests?api_key=%s", SKYBOX_URL, SKYBOX_API_KEY)
 
-	// skybox_style_id
-	postBody, _ := json.Marshal(map[string]string{
-		"prompt":    prompt,
-		"generator": "stable-skybox",
+	// before I prompt
+	prompt = strings.TrimLeft(prompt, " ")
+	words := strings.Split(prompt, " ")
+	// fmt.Printf("Words: %+v", words)
+
+	styleFile := dir + "/tmp/skybox_styles.json"
+	body, err := ioutil.ReadFile(styleFile)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var styles []SkyboxStyle
+	err = json.Unmarshal(body, &styles)
+	if err != nil {
+		fmt.Printf("Error parsing Skybox Styles JSON")
+	}
+
+	SkyboxStyleID := 1
+
+	fmt.Printf("\n\nFirst Word: %s\n", words[0])
+
+	for _, style := range styles {
+		// fmt.Printf("\tSkybox Style: %d\n", style.ID)
+
+		if fmt.Sprintf("%d", style.ID) == words[0] {
+			prompt = strings.Join(words, " ")
+			SkyboxStyleID = style.ID
+
+			fmt.Printf("\tCustom Skybox Style: %s\n", style.Name)
+		}
+	}
+
+	fmt.Printf("Generating Skybox w/ Custom Skybox ID: %d", SkyboxStyleID)
+	postBody, _ := json.Marshal(map[string]interface{}{
+		"prompt":          prompt,
+		"generator":       "stable-skybox",
+		"skybox_style_id": SkyboxStyleID,
 		// "aspect":    "landscape",
 		// "webhook_url": "https://f7a0-47-151-134-189.ngrok.io/hello",
 	})
@@ -199,8 +233,9 @@ func requestImage(prompt string) {
 	if err != nil {
 		log.Fatalf("An Error Occurred %v", err)
 	}
+
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -230,8 +265,6 @@ func RequestAllStyles() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	// sb := string(body)
-	// log.Printf(sb)
 
 	styleFile := dir + "/tmp/skybox_styles.json"
 
