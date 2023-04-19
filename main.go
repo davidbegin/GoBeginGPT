@@ -168,18 +168,55 @@ func handleBroadcast() {
 	}
 }
 
-func main() {
-	// TODO: Ponder naming all this better
-	webserver := flag.Bool("webserver", false, "Whether to run a Seal Webserver")
-	duet := flag.Bool("duet", false, "Whether to run Duet code")
-	skybox_styles := flag.Bool("skybox_styles", false, "Whether to query for all Skybox Styles")
+func main2() {
+	prompt := flag.String("prompt", "", "a prompt to generate")
 
-	// TODO: add taking in the prompt directly
-	prompt_file := flag.String("prompt_file", "prompt.txt", "The file that contains the prompt")
+	numbPtr := flag.Int("numb", 42, "an int")
+	forkPtr := flag.Bool("fork", false, "a bool")
+
+	var svar string
+	flag.StringVar(&svar, "svar", "bar", "a string var")
 
 	flag.Parse()
+
+	fmt.Println("prompt:", *prompt)
+	fmt.Println("numb:", *numbPtr)
+	fmt.Println("fork:", *forkPtr)
+	fmt.Println("svar:", svar)
+	fmt.Println("tail:", flag.Args())
+}
+
+// TODO: Ponder naming all this better
+func main() {
+	webserver := flag.Bool("webserver", false, "Whether to run a Seal Webserver")
+	duet := flag.Bool("duet", false, "Whether to run Duet code")
+	skybox_styles := flag.Bool("styles", false, "Whether to query for all Skybox Styles")
+	prompt_file := flag.String("prompt_file", "prompt.txt", "The file that contains the prompt")
+
+	remix := flag.Bool("remix", false, "Whether to remix the Skybox Styles")
+
+	var remixID int
+	flag.IntVar(&remixID, "remix_id", 0, "The skybox ID of skybox you want to remix")
+	var prompt string
+	flag.StringVar(&prompt, "prompt", "", "The prompt you want to generate")
+
+	flag.Parse()
+	fmt.Printf("INFO: %s | ID: %d\n", prompt, remixID)
+
 	if *webserver {
 		showAndTell(broadcast)
+	} else if *remix {
+
+		// var skyboxRemixResponseFilePath = dir + "/GoBeginGPT/tmp/remix_skybox_response.json"
+		// skybox.ParseSkyboxRemixResponse(skyboxRemixResponseFilePath)
+		// return
+
+		if prompt == "" || remixID == 0 {
+			fmt.Printf("Need to pass in prompt: %s | ID: %d\n", prompt, remixID)
+			return
+		}
+
+		skybox.Remix(remixID, prompt)
 	} else if *skybox_styles {
 		skybox.RequestAllStyles()
 	} else if *duet {

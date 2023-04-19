@@ -15,11 +15,13 @@ import (
 	"beginbot.com/GoBeginGPT/pkg/utils"
 )
 
-var SKYBOX_URL = "https://backend.blockadelabs.com/api/v1/imagine"
+var SKYBOX_REMIX_URL = "https://backend.blockadelabs.com/api/v1/skybox"
+var SKYBOX_IMAGINE_URL = "https://backend.blockadelabs.com/api/v1/imagine"
 var SKYBOX_API_KEY = os.Getenv("SKYBOX_API_KEY")
 
 var dir, _ = utils.GetGreatGrandparentDir()
 var skyboxResponseFilePath = dir + "/tmp/skybox_response.json"
+var skyboxRemixResponseFilePath = dir + "/tmp/remix_skybox_response.json"
 var skyboxWebpageTemplateFilepath = dir + "/templates/skybox.html"
 var skyboxWebpageFilepath = dir + "/build/skybox.html"
 
@@ -33,6 +35,30 @@ type SkyboxStyle struct {
 	MaxChar   string `json:"max-char"`
 	Image     string `json:"image"`
 	SortOrder int    `json:"sort_order"`
+}
+
+type RemixRequestResponse struct {
+	ID              int       `json:"id"`
+	ObfuscatedID    string    `json:"obfuscated_id"`
+	UserID          int       `json:"user_id"`
+	Title           string    `json:"title"`
+	Prompt          string    `json:"prompt"`
+	Username        string    `json:"username"`
+	Status          string    `json:"status"`
+	QueuePosition   int       `json:"queue_position"`
+	FileURL         string    `json:"file_url"`
+	ThumbURL        string    `json:"thumb_url"`
+	DepthMapURL     string    `json:"depth_map_url"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+	ErrorMessage    string    `json:"error_message"`
+	PusherChannel   string    `json:"pusher_channel"`
+	PusherEvent     string    `json:"pusher_event"`
+	Type            string    `json:"type"`
+	SkyboxStyleID   int       `json:"skybox_style_id"`
+	SkyboxID        int       `json:"skybox_id"`
+	SkyboxStyleName string    `json:"skybox_style_name"`
+	SkyboxName      string    `json:"skybox_name"`
 }
 
 // "id": 5,
@@ -72,8 +98,49 @@ type Response struct {
 	UserImaginariumImageLeft int `json:"user_imaginarium_image_left"`
 }
 
+func Remix(remixID int, prompt string) {
+	requestsURL := fmt.Sprintf("%s?api_key=%s", SKYBOX_REMIX_URL, SKYBOX_API_KEY)
+	// TODO: setup logic to choose this
+	// setup, using same prompt + seed + remix w/ different StyleID
+	SkyboxStyleID := 20
+
+	postBody, _ := json.Marshal(map[string]interface{}{
+		"prompt":           prompt,
+		"generator":        "stable-skybox",
+		"skybox_style_id":  SkyboxStyleID,
+		"remix_imagine_id": remixID,
+	})
+	responseBody := bytes.NewBuffer(postBody)
+	fmt.Printf("%+v", responseBody)
+
+	resp, err := http.Post(requestsURL, "application/json", responseBody)
+	if err != nil {
+		log.Fatalf("An Error Occurred %v", err)
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	sb := string(body)
+	d1 := []byte(sb)
+
+	// We need to save to proper remix Filepath
+	err = os.WriteFile(skyboxRemixResponseFilePath, d1, 0644)
+
+	if err != nil {
+		fmt.Printf("%+v", err)
+		panic(err)
+	}
+
+	// I could just pass in a bool, for Remix or not
+	ParseSkyboxRemixResponse(skyboxRemixResponseFilePath)
+}
+
 func requestStatus(id string) Response {
-	url := fmt.Sprintf("%s/requests/%s?api_key=%s", SKYBOX_URL, id, SKYBOX_API_KEY)
+	url := fmt.Sprintf("%s/requests/%s?api_key=%s", SKYBOX_IMAGINE_URL, id, SKYBOX_API_KEY)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -123,7 +190,7 @@ func CreateSkyboxPage(url string) {
 }
 
 func requestAll() {
-	url := fmt.Sprintf("%s/myRequests?api_key=%s", SKYBOX_URL, SKYBOX_API_KEY)
+	url := fmt.Sprintf("%s/myRequests?api_key=%s", SKYBOX_IMAGINE_URL, SKYBOX_API_KEY)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -137,8 +204,66 @@ func requestAll() {
 	log.Printf(sb)
 }
 
-func parseSkyboxResponse() {
-	skyboxResponse, err := os.ReadFile(skyboxResponseFilePath)
+func ParseSkyboxRemixResponse(responseFilepath string) {
+	skyboxResponse, err := os.ReadFile(responseFilepath)
+	if err != nil {
+		fmt.Print("Error reading Skybox response")
+		panic(err)
+	}
+
+	fmt.Printf("SKYBOX RESPONSE: %+v\n", string(skyboxResponse))
+
+	var parsedResponse RemixRequestResponse
+	json.Unmarshal(skyboxResponse, &parsedResponse)
+
+	fmt.Print("\n\t ~~~ Checking Status of Skybox Remix generation ~~~\n\n")
+
+	id := fmt.Sprint(parsedResponse.ID)
+	fmt.Printf("\n\tID: %s\n", id)
+
+	for {
+		timer := time.NewTimer(5 * time.Second)
+		request := requestStatus(id)
+
+		if request.Status == "error" {
+			fmt.Printf("\n\nError in skybox generation!\n\n")
+			break
+		}
+
+		if request.FileURL != "" {
+			fmt.Printf("Skybox URL: %s\n", request.FileURL)
+
+			sb := request.FileURL
+			d1 := []byte(sb)
+
+			// This is a dumb way to name your file
+			err = os.WriteFile(
+				dir+fmt.Sprintf(
+					"/skybox_archive/%s.txt",
+					parsedResponse.Prompt[:10],
+				),
+				d1,
+				0644,
+			)
+			if err != nil {
+				fmt.Printf("Error Writing to skybox Archive: %+v", err)
+				panic(err)
+			}
+
+			fmt.Printf("Generating Skybox HTML Page: %s\n", request.FileURL)
+			CreateSkyboxPage(request.FileURL)
+			fmt.Print("Finished Generating HTML Page\n")
+			break
+		}
+
+		fmt.Print("...\n\n")
+
+		<-timer.C
+	}
+}
+
+func ParseSkyboxResponse(responseFilepath string) {
+	skyboxResponse, err := os.ReadFile(responseFilepath)
 	if err != nil {
 		fmt.Print("Error reading Skybox response")
 		panic(err)
@@ -166,15 +291,31 @@ func parseSkyboxResponse() {
 
 			sb := request.FileURL
 			d1 := []byte(sb)
-			err = os.WriteFile(dir+fmt.Sprintf("/skybox_archive/%s.txt", parsedResponse.Response.Prompt[:10]), d1, 0644)
+			err = os.WriteFile(
+				dir+fmt.Sprintf(
+					"/skybox_archive/%s.txt",
+					parsedResponse.Response.Prompt[:10],
+				),
+				d1,
+				0644,
+			)
 			if err != nil {
 				fmt.Printf("Error Writing to skybox Archive: %+v", err)
 				panic(err)
 			}
 
 			fmt.Printf("Generating Skybox HTML Page: %s\n", request.FileURL)
+
 			CreateSkyboxPage(request.FileURL)
 			fmt.Print("Finished Generating HTML Page\n")
+
+			chatNotif := fmt.Sprintf("%d | %s", parsedResponse.Response.ID, parsedResponse.Response.Prompt[:15])
+			fmt.Printf("ChatNotif: %s\n", chatNotif)
+			notif := fmt.Sprintf("beginbot \"%s\"", chatNotif)
+			_, err := utils.RunBashCommand(notif)
+			if err != nil {
+				log.Fatal(err)
+			}
 			break
 		}
 
@@ -185,7 +326,7 @@ func parseSkyboxResponse() {
 }
 
 func requestImage(prompt string) {
-	requestsURL := fmt.Sprintf("%s/requests?api_key=%s", SKYBOX_URL, SKYBOX_API_KEY)
+	requestsURL := fmt.Sprintf("%s/requests?api_key=%s", SKYBOX_IMAGINE_URL, SKYBOX_API_KEY)
 
 	// before I prompt
 	prompt = strings.TrimLeft(prompt, " ")
@@ -323,7 +464,9 @@ func RequestAllStyles() {
 	}
 }
 
+// TODO: update this , so requestImage, passes a info to parseSkyboxResponse
+// Request
 func GenerateSkybox(prompt string) {
 	requestImage(prompt)
-	parseSkyboxResponse()
+	ParseSkyboxResponse(skyboxResponseFilePath)
 }
