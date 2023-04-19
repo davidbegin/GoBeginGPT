@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"beginbot.com/GoBeginGPT/pkg/skybox"
 	"beginbot.com/GoBeginGPT/pkg/uberduck"
@@ -94,21 +95,22 @@ func SplitDuet(broadcast chan string, voiceFile string) {
 	}
 
 	var Files = []string{}
+	var wg sync.WaitGroup
 
-	// We must make sure animationName space folder exists
-
-	// do I have an abs
 	animationFolder, err := filepath.Abs(outerDir + "/" + animationNamespace)
 	if err != nil {
 		fmt.Printf("Error Finding Absolute animation Folder: %+v", err)
 		return
 	}
 
-	os.MkdirAll(animationFolder, os.ModePerm)
+	err = os.MkdirAll(animationFolder, os.ModePerm)
+
+	if err != nil {
+		fmt.Printf("Erroring Mkdir: %+v", err)
+	}
 
 	for i, verse := range verses {
-
-		// This should be a voice!!!!
+		wg.Add(1)
 		voiceFile := fmt.Sprintf("%s_%d", verse.Voice, i)
 
 		go uberduck.TextToVoiceAndAnimate(
@@ -118,16 +120,17 @@ func SplitDuet(broadcast chan string, voiceFile string) {
 			voiceFile,
 			animationNamespace,
 			verse.Content,
+			&wg,
 		)
 
 		media, _ := filepath.Abs(dir + fmt.Sprintf("/static/media/%s.mp4", voiceFile))
 		Files = append(Files, media)
 	}
-	done := make(chan bool)
-	<-done
 
+	wg.Wait()
 	// ===========================================
 
+	// This can't be called until all 3 are done
 	tmpl, err := template.New("ffmpeg File visit").Parse("{{range $val := .}} file '{{$val}}'\n{{end}}")
 	if err != nil {
 		panic(err)
@@ -141,7 +144,6 @@ func SplitDuet(broadcast chan string, voiceFile string) {
 
 	err = ioutil.WriteFile(ffmpegFileListPath, []byte(ffmpegFileList.String()), 0644)
 
-	// Call the combine script after the file is created
 	cmd := exec.Command("/bin/sh", combineScript)
 	var outb, errb bytes.Buffer
 	cmd.Stdout = &outb
@@ -150,7 +152,6 @@ func SplitDuet(broadcast chan string, voiceFile string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// <-done
 }
 
 func SplitScript() string {

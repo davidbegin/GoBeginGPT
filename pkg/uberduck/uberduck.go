@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 
 	"beginbot.com/GoBeginGPT/pkg/utils"
@@ -93,13 +94,19 @@ func TextToVoiceAndAnimate(
 	voiceFile string,
 	animationNamespace string,
 	contents string,
+	wg *sync.WaitGroup,
 ) {
 
+	defer wg.Done()
+
+	fmt.Println("Before Uberduck")
 	response := requestImageFromUberduck(character, voice, contents)
+	fmt.Println("After Uberduck")
 	dialogueFile := voicesFolder + fmt.Sprintf("/%s/%s.txt", animationNamespace, voiceFile)
 
 	for {
 		wavFile := fmt.Sprintf("%s/%s.wav", animationNamespace, voiceFile)
+		fmt.Println("Polling for Uberduck")
 		outputFile, err := pollForFinishedUberduck(voice, wavFile, response.UUID)
 
 		if err != nil {
