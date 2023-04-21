@@ -21,6 +21,7 @@ import (
 var dir, _ = utils.GetGrandparentDir()
 var voiceCharacterFile = dir + "/tmp/voice_character.csv"
 var gptResp = dir + "/tmp/current/chatgpt_response.txt"
+var duetResp = dir + "/tmp/current/duet.txt"
 var voiceLoc = dir + "/tmp/current/voice.txt"
 
 var clients = make(map[*websocket.Conn]bool)
@@ -31,10 +32,10 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-func look4GptRequests(broadcast chan string) {
+func look4DuetRequests(broadcast chan string) {
 	done := make(chan bool)
 
-	ogGPT, err := ioutil.ReadFile(gptResp)
+	ogGPT, err := ioutil.ReadFile(duetResp)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading OG GPT Response file: %v\n", err)
 		os.Exit(1)
@@ -57,7 +58,8 @@ func look4GptRequests(broadcast chan string) {
 			}
 
 			if string(ogGPT) != string(gpt) {
-				gpt_response_parser.SplitDuet(broadcast, "chatgpt_response.txt")
+				ogGPT = gpt
+				gpt_response_parser.SplitDuet(broadcast, "duet.txt")
 			}
 		}
 	}()
@@ -92,12 +94,50 @@ func look4VoiceRequests(broadcast chan string) {
 	}
 }
 
+func look4GptRequests(broadcast chan string) {
+	done := make(chan bool)
+
+	ogGPT, err := ioutil.ReadFile(gptResp)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading OG GPT Response file: %v\n", err)
+		os.Exit(1)
+	}
+
+	go func() {
+		oneSec := time.NewTicker(1 * time.Second)
+		for {
+			<-oneSec.C
+			gpt, err := ioutil.ReadFile(gptResp)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error reading OG GPT Response file: %v\n", err)
+				os.Exit(1)
+			}
+
+			_, err = ioutil.ReadFile(voiceLoc)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error reading voice file: %v\n", err)
+				os.Exit(1)
+			}
+
+			if string(ogGPT) != string(gpt) {
+				uberduck.TextToVoice(broadcast, "birb", "neo", string(gpt))
+				ogGPT = gpt
+				// gpt_response_parser.SplitDuet(broadcast, "chatgpt_response.txt")
+			}
+		}
+	}()
+
+	// not sure I wanna block forever here, or if I need to with the GoRoutine Above
+	<-done
+}
+
 func showAndTell(broadcast chan string) {
 	done := make(chan bool)
 
 	// I could also pass done to each of these to wait
 	go look4VoiceRequests(broadcast)
 	go look4GptRequests(broadcast)
+	go look4DuetRequests(broadcast)
 	go handleBroadcast()
 
 	// I need to call something different

@@ -31,11 +31,25 @@
       "type": "equirectangular",
       "panorama": "https://blockade-platform-production.s3.amazonaws.com/images/imagine/skybox_sterile_office_environment_amazon_hq_style__a8185e0b9204af34__2443168_a8185e0b9204af34__.jpg?ver=1",
       "autoLoad": true,
-      "autoRotate": 2,
+      <!-- "autoRotate": 2, -->
       "compass": false,
       "showControls": false
   });
 
+  function printPos() {
+    console.log( "Yaw", viewer.getYaw(), "Pitch ", viewer.getPitch())
+  }
+
+  function BeginOffice1() {
+    viewer.setYaw( -80.20532504128386)
+    viewer.setPitch( 8.280357451979064)
+  }
+
+
+  <!-- viewer.getYaw() -->
+<!-- -78.42104559530395 -->
+<!-- viewer.getPitch() -->
+<!-- 4.351330482990422 -->
 
   // Function to generate a random number within a given range
   function getRandomNumberInRange(min, max) {
@@ -58,7 +72,7 @@
       viewer.setPitch(randomPitch);
   }
 
-    const timer = setInterval(changeYawAndPitchRandomly, 10000);
+    <!-- const timer = setInterval(changeYawAndPitchRandomly, 10000); -->
 </script>
 
 </body>

@@ -28,7 +28,7 @@ var chatgptResponseFilepath = outerDir + "/tmp/duet.txt"
 // var chatgptResponseFilepath = dir + "/tmp/chatgpt_response.txt"
 
 func SplitDuet(broadcast chan string, voiceFile string) {
-	duetFile := outerDir + fmt.Sprintf("/tmp/%s", voiceFile)
+	duetFile := outerDir + fmt.Sprintf("/tmp/current/%s", voiceFile)
 
 	duet, err := ioutil.ReadFile(duetFile)
 	if err != nil {
