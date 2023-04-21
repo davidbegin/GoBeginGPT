@@ -7,7 +7,6 @@ remix:
 skybox:
 	./bin/GoBeginGPT
 
-
 # These are all the folders and files we need to get started
 # TODO: finish updating these
 init:

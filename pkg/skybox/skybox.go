@@ -98,16 +98,15 @@ type Response struct {
 	UserImaginariumImageLeft int `json:"user_imaginarium_image_left"`
 }
 
-func Remix(remixID int, prompt string) {
+func Remix(remixID int, styleID int, prompt string) {
 	requestsURL := fmt.Sprintf("%s?api_key=%s", SKYBOX_REMIX_URL, SKYBOX_API_KEY)
 	// TODO: setup logic to choose this
 	// setup, using same prompt + seed + remix w/ different StyleID
-	SkyboxStyleID := 20
 
 	postBody, _ := json.Marshal(map[string]interface{}{
 		"prompt":           prompt,
 		"generator":        "stable-skybox",
-		"skybox_style_id":  SkyboxStyleID,
+		"skybox_style_id":  styleID,
 		"remix_imagine_id": remixID,
 	})
 	responseBody := bytes.NewBuffer(postBody)
@@ -309,7 +308,8 @@ func ParseSkyboxResponse(responseFilepath string) {
 			CreateSkyboxPage(request.FileURL)
 			fmt.Print("Finished Generating HTML Page\n")
 
-			chatNotif := fmt.Sprintf("%d | %s", parsedResponse.Response.ID, parsedResponse.Response.Prompt[:15])
+			chatNotif := fmt.Sprintf("! %d | %s", parsedResponse.Response.ID, parsedResponse.Response.Prompt)
+			// chatNotif := fmt.Sprintf("%d | %s", parsedResponse.Response.ID, parsedResponse.Response.Prompt[:15])
 			fmt.Printf("ChatNotif: %s\n", chatNotif)
 			notif := fmt.Sprintf("beginbot \"%s\"", chatNotif)
 			_, err := utils.RunBashCommand(notif)

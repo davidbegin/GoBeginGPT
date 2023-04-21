@@ -200,6 +200,9 @@ func main() {
 	var prompt string
 	flag.StringVar(&prompt, "prompt", "", "The prompt you want to generate")
 
+	var styleId int
+	flag.IntVar(&styleId, "style", 20, "The Skybox Style ID")
+
 	flag.Parse()
 	fmt.Printf("INFO: %s | ID: %d\n", prompt, remixID)
 
@@ -216,7 +219,7 @@ func main() {
 			return
 		}
 
-		skybox.Remix(remixID, prompt)
+		skybox.Remix(remixID, styleId, prompt)
 	} else if *skybox_styles {
 		skybox.RequestAllStyles()
 	} else if *duet {
