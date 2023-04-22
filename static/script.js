@@ -84,8 +84,14 @@ function bringCharactersToLife() {
     if (eventName === "done") {
         console.log("Attemping to Hide dialog")
         hideDialog(charDiv, dialog)
-    } else if (eventName == "dialog") {
 
+      // I should create a file:
+      // That links to filters in OBS and the position of the pannellum
+    } else if (eventName == "office") {
+      BeginOffice1()
+    } else if (eventName == "lunch") {
+      BeginOffice2()
+    } else if (eventName == "dialog") {
       console.log("We got dialog!")
 
       // Split the string based on whitespace
@@ -100,7 +106,7 @@ function bringCharactersToLife() {
       showDialog(newContent, charDiv, dialog)
     } else if (eventName == "start_animation") {
         const video_wrapper = document.getElementById("lip_sync_wrapper");
-        console.log("ANIMAITON TIME")
+        console.log("ANIAITON TIME")
         video.load();
         console.log("POST LOAD")
         video_wrapper.classList.remove("hide");
@@ -121,6 +127,56 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+viewer = pannellum.viewer('panorama', {
+    "type": "equirectangular",
+    "panorama": "https://blockade-platform-production.s3.amazonaws.com/images/imagine/skybox_sterile_office_environment_amazon_hq_style__a8185e0b9204af34__2443168_a8185e0b9204af34__.jpg?ver=1",
+    "autoLoad": true,
+    <!-- "autoRotate": 2, -->
+    "compass": false,
+    "showControls": false
+});
+
+function printPos() {
+  console.log( "Yaw", viewer.getYaw(), "Pitch ", viewer.getPitch())
+}
+
+function stopAutoRotate() {
+  viewer.stopAutoRotate()
+}
+
+// We need to know how to change the panorama image
+
+function BeginOffice2() {
+  viewer.setYaw(0.0)
+  viewer.setPitch(0.0)
+}
+
+function BeginOffice1() {
+  viewer.setYaw(-80.20532504128386)
+  viewer.setPitch(8.280357451979064)
+}
+
+// Function to generate a random number within a given range
+function getRandomNumberInRange(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+// Function to change yaw and pitch randomly
+function changeYawAndPitchRandomly() {
+    var minYaw = -100;
+    var maxYaw = 100;
+    var randomYaw = getRandomNumberInRange(minYaw, maxYaw);
+
+    var minPitch = -90
+    var maxPitch = 90
+    var randomPitch = getRandomNumberInRange(minPitch, maxPitch);
+
+    viewer.setYaw(randomYaw);
+    viewer.setPitch(randomPitch);
+}
+
+<!-- const timer = setInterval(changeYawAndPitchRandomly, 10000); -->
+
 const video = document.getElementById("lip_sync");
 const observer = new MutationObserver(callback)
 const options = {
@@ -129,3 +185,6 @@ const options = {
 observer.observe(video, options)
 
 bringCharactersToLife()
+
+// ==============================================
+

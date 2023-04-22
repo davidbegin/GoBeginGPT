@@ -20,6 +20,7 @@ import (
 // We are in main, this actually goes outside the project the directory above
 var dir, _ = utils.GetGrandparentDir()
 var voiceCharacterFile = dir + "/tmp/voice_character.csv"
+var moveRequest = dir + "/tmp/current/move.txt"
 var gptResp = dir + "/tmp/current/chatgpt_response.txt"
 var duetResp = dir + "/tmp/current/duet.txt"
 var voiceLoc = dir + "/tmp/current/voice.txt"
@@ -59,7 +60,7 @@ func look4DuetRequests(broadcast chan string) {
 
 			if string(ogGPT) != string(gpt) {
 				ogGPT = gpt
-				gpt_response_parser.SplitDuet(broadcast, "duet.txt")
+				// gpt_response_parser.SplitDuet(broadcast, "duet.txt")
 			}
 		}
 	}()
@@ -94,6 +95,37 @@ func look4VoiceRequests(broadcast chan string) {
 	}
 }
 
+func look4MoveRequests(broadcast chan string) {
+	done := make(chan bool)
+
+	ogPosition, err := ioutil.ReadFile(moveRequest)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading OG GPT Response file: %v\n", err)
+		os.Exit(1)
+	}
+
+	go func() {
+		oneSec := time.NewTicker(200 * time.Millisecond)
+		for {
+			<-oneSec.C
+			position, err := ioutil.ReadFile(moveRequest)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error reading OG GPT Response file: %v\n", err)
+				os.Exit(1)
+			}
+
+			if string(ogPosition) != string(position) {
+				fmt.Printf("We are trying to move you to: %s", string(position))
+				broadcast <- string(position)
+				ogPosition = position
+			}
+		}
+	}()
+
+	// not sure I wanna block forever here, or if I need to with the GoRoutine Above
+	<-done
+}
+
 func look4GptRequests(broadcast chan string) {
 	done := make(chan bool)
 
@@ -122,7 +154,6 @@ func look4GptRequests(broadcast chan string) {
 			if string(ogGPT) != string(gpt) {
 				uberduck.TextToVoice(broadcast, "birb", "neo", string(gpt))
 				ogGPT = gpt
-				// gpt_response_parser.SplitDuet(broadcast, "chatgpt_response.txt")
 			}
 		}
 	}()
@@ -135,9 +166,13 @@ func showAndTell(broadcast chan string) {
 	done := make(chan bool)
 
 	// I could also pass done to each of these to wait
+	// These are waiting on files
+	// we write to a file
+	// I could write to a file, with scene
+	go look4MoveRequests(broadcast)
 	go look4VoiceRequests(broadcast)
 	go look4GptRequests(broadcast)
-	go look4DuetRequests(broadcast)
+	// go look4DuetRequests(broadcast)
 	go handleBroadcast()
 
 	// I need to call something different
@@ -264,7 +299,6 @@ func main() {
 		skybox.RequestAllStyles()
 	} else if *duet {
 		gpt_response_parser.SplitDuet(broadcast, "duet.txt")
-		// gpt_response_parser.SplitDuet(broadcast, "chatgpt_response.txt")
 	} else {
 		b, err := os.ReadFile(*prompt_file)
 		if err != nil {
