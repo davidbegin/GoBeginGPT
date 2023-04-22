@@ -3,6 +3,7 @@ package file_watchers
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -19,11 +20,55 @@ var voiceCharacterFile = dir + "/tmp/voice_character.csv"
 var moveRequest = dir + "/tmp/current/move.txt"
 var remixRequestPath = dir + "/tmp/current/remix.txt"
 var skyboxRequestPath = dir + "/tmp/current/skybox.txt"
+var previousRequestPath = dir + "/tmp/current/previous.txt"
 var gptResp = dir + "/tmp/current/chatgpt_response.txt"
 var voiceLoc = dir + "/tmp/current/voice.txt"
 
 var DEFAULT_STYLE_ID = 5
 
+func Look4PreviousRequests(broadcast chan string) {
+	done := make(chan bool)
+
+	ogPreviousRequest, err := ioutil.ReadFile(previousRequestPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading OG GPT Response file: %v\n", err)
+		os.Exit(1)
+	}
+
+	go func() {
+		oneSec := time.NewTicker(1 * time.Second)
+
+		for {
+			previous, err := ioutil.ReadFile(previousRequestPath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error reading OG GPT Response file: %v\n", err)
+			}
+
+			if string(ogPreviousRequest) != string(previous) {
+				fmt.Printf("Attempting to return to previous Skybox: %s", string(previous))
+				var archivePath = dir + fmt.Sprintf("/GoBeginGPT/skybox_archive/%s.txt", previous)
+				// previous
+				previousURL, err := ioutil.ReadFile(archivePath)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error reading Archive file: %v\n", err)
+					ogPreviousRequest = previous
+					return
+				}
+
+				broadcast <- fmt.Sprintf("skybox %s", previousURL)
+				// Read in the Skybox ID form thje file
+				// look up the skybox file in the archive by ID
+				// read in the contents of the skybox, which returns URL
+				// send a skybox update message to websockets URL
+				ogPreviousRequest = previous
+			}
+			<-oneSec.C
+		}
+	}()
+
+	// not sure I wanna block forever here, or if I need to with the GoRoutine Above
+	<-done
+}
 func Look4DuetRequests(broadcast chan string) {
 	done := make(chan bool)
 
@@ -87,32 +132,53 @@ func Look4VoiceRequests(broadcast chan string) {
 }
 
 func Look4SkyboxRequests(broadcast chan string) {
+	requestPath := skyboxRequestPath
+
 	done := make(chan bool)
 
-	ogSkybox, err := ioutil.ReadFile(skyboxRequestPath)
+	// Load the last skybox request, before checking for updates
+	ogSkybox, err := ioutil.ReadFile(requestPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading OG GPT Response file: %v\n", err)
 		os.Exit(1)
 	}
 
 	go func() {
-		oneSec := time.NewTicker(200 * time.Millisecond)
+		timer := time.NewTicker(200 * time.Millisecond)
+
 		for {
-			<-oneSec.C
-			skyboxRequest, err := ioutil.ReadFile(skyboxRequestPath)
+			skyboxRequest, err := ioutil.ReadFile(requestPath)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error reading OG GPT Response file: %v\n", err)
 				os.Exit(1)
 			}
 
 			if string(ogSkybox) != string(skyboxRequest) {
-				fmt.Printf("We are trying to move you to: %s", string(skyboxRequest))
-				skyboxURL := skybox.ParseSkyboxResponseAndUpdateWebpage()
-				broadcast <- fmt.Sprintf("skybox %s", skyboxURL)
+				fmt.Printf("\tNew Skybox Request: %s", string(skyboxRequest))
+
+				id, url := skybox.GenerateSkybox(string(skyboxRequest))
+
+				chatNotif := fmt.Sprintf(
+					"! %d | %s",
+					id,
+					string(skyboxRequest),
+				)
+				fmt.Printf("ChatNotif: %s\n", chatNotif)
+				notif := fmt.Sprintf("beginbot \"%s\"", chatNotif)
+				_, err := utils.RunBashCommand(notif)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				// We also need to send a message back to github
+				broadcast <- fmt.Sprintf("skybox %s", url)
+
 				ogSkybox = skyboxRequest
 			}
+			<-timer.C
 		}
 	}()
+
 	// not sure I wanna block forever here, or if I need to with the GoRoutine Above
 	<-done
 }

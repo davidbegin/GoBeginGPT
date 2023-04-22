@@ -8,6 +8,29 @@ const dialogs = {
   'mcguirk': 'dialog-7'
 };
 
+// we need to look up the latest variation of STYLES OF SCENES
+//
+// Curent Bar
+// Current Office
+const pannellumMoveFunctions = {
+  'lunch': {
+    'func': BeginOffice2,
+    'url': "https://blockade-platform-production.s3.amazonaws.com/images/imagine/skybox_sterile_office_environment_amazon_hq_style__a8185e0b9204af34__2443168_a8185e0b9204af34__.jpg?ver=1",
+  },
+  'office': {
+    'func': BeginOffice1,
+    'url': "https://blockade-platform-production.s3.amazonaws.com/images/imagine/skybox_sterile_office_environment_amazon_hq_style__a8185e0b9204af34__2443168_a8185e0b9204af34__.jpg?ver=1",
+  },
+  'bar':  {
+    'func': BeginBar2,
+    'url': "https://blockade-platform-production.s3.amazonaws.com/images/imagine/cocktail_bar__b65346d0a00befc9__2449796_b65346d0a00befc9__2449796.jpg?ver=1",
+  },
+  'bar1': {
+    'func': BeginBar1,
+    'url': "https://blockade-platform-production.s3.amazonaws.com/images/imagine/dirty_dingy_bar_biker_dudes_sticky_floors__b5373f30090673cf__2451051_b.jpg?ver=1",
+  }
+};
+
 function hideDialog(character, dialog) {
   dialog.classList.remove("popin");
   dialog.classList.add("popout");
@@ -65,11 +88,17 @@ function bringCharactersToLife() {
 
     let dialogText = dialogs[character];
 
-
     console.log("Event: " + eventName + " | Character: " + character + " | Dialog: " + dialogText)
 
     let charDiv = document.getElementById(character)
     let dialog = document.getElementById(dialogText);
+
+    let moveInfo = pannellumMoveFunctions[eventName]
+    if (moveInfo != undefined) {
+      UpdateSkybox(moveInfo.url)
+      // So I have to wait????
+      moveInfo.func()
+    }
 
     if (eventName === "done") {
         console.log("Attemping to Hide dialog")
@@ -80,13 +109,6 @@ function bringCharactersToLife() {
     } else if (eventName == "skybox") {
       let skyboxURL = contents[1];
       UpdateSkybox(skyboxURL)
-      // we need to parse out the word after eventName
-      // we need to call JS function, that creates a new
-      // Pannellum viewer and Reloads
-    } else if (eventName == "office") {
-      BeginOffice1()
-    } else if (eventName == "lunch") {
-      BeginOffice2()
     } else if (eventName == "dialog") {
       console.log("We got dialog!")
 
@@ -158,6 +180,18 @@ function BeginOffice2() {
   viewer.setYaw(0.0)
   viewer.setPitch(0.0)
 }
+
+function BeginBar1() {
+  viewer.setYaw( 73.62672087808016)
+  viewer.setPitch(7.2354649236914845)
+
+}
+
+function BeginBar2() {
+  viewer.setYaw(-109.43920564256291)
+  viewer.setPitch(-3.200519950908541)
+}
+
 
 function BeginOffice1() {
   viewer.setYaw(-80.20532504128386)

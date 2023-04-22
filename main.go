@@ -30,6 +30,7 @@ func showAndTell(broadcast chan string) {
 	go file_watchers.Look4GptRequests(broadcast)
 	go file_watchers.Look4RemixRequests(broadcast)
 	go file_watchers.Look4SkyboxRequests(broadcast)
+	go file_watchers.Look4PreviousRequests(broadcast)
 	// This is not currently working
 	// go file_watchers.Look4DuetRequests(broadcast)
 	go handleBroadcast()
