@@ -252,10 +252,8 @@ func ParseSkyboxRemixResponse(responseFilepath string) string {
 				panic(err)
 			}
 
-			fmt.Printf("Generating Skybox HTML Page: %s\n", request.FileURL)
 			newSkyboxURL = request.FileURL
-			CreateSkyboxPage(request.FileURL)
-			fmt.Print("Finished Generating HTML Page\n")
+			// does this break all the way to newSkybox
 			break
 		}
 
@@ -267,7 +265,10 @@ func ParseSkyboxRemixResponse(responseFilepath string) string {
 	return newSkyboxURL
 }
 
-func ParseSkyboxResponseAndUpdateWebpage(responseFilepath string) {
+func ParseSkyboxResponseAndUpdateWebpage() string {
+	newSkyboxURL := ""
+	responseFilepath := skyboxResponseFilePath
+
 	skyboxResponse, err := os.ReadFile(responseFilepath)
 	if err != nil {
 		fmt.Print("Error reading Skybox response")
@@ -298,8 +299,8 @@ func ParseSkyboxResponseAndUpdateWebpage(responseFilepath string) {
 			d1 := []byte(sb)
 			err = os.WriteFile(
 				dir+fmt.Sprintf(
-					"/skybox_archive/%s.txt",
-					parsedResponse.Response.Prompt[:10],
+					"/skybox_archive/%d.txt",
+					parsedResponse.Response.ID,
 				),
 				d1,
 				0644,
@@ -310,20 +311,8 @@ func ParseSkyboxResponseAndUpdateWebpage(responseFilepath string) {
 			}
 
 			fmt.Printf("Generating Skybox HTML Page: %s\n", request.FileURL)
+			newSkyboxURL = request.FileURL
 
-			// we need to send a Websocket message
-			// with the URL inside of it
-			// this message we we will
-
-			// CreateSkyboxPage(request.FileURL)
-			// fmt.Print("Finished Generating HTML Page\n")
-			// chatNotif := fmt.Sprintf("! %d | %s", parsedResponse.Response.ID, parsedResponse.Response.Prompt)
-			// fmt.Printf("ChatNotif: %s\n", chatNotif)
-			// notif := fmt.Sprintf("beginbot \"%s\"", chatNotif)
-			// _, err := utils.RunBashCommand(notif)
-			// if err != nil {
-			// 	log.Fatal(err)
-			// }
 			break
 		}
 
@@ -331,6 +320,8 @@ func ParseSkyboxResponseAndUpdateWebpage(responseFilepath string) {
 
 		<-timer.C
 	}
+
+	return newSkyboxURL
 }
 
 func ParseSkyboxResponseAndGenerateHTML(responseFilepath string) {
@@ -396,13 +387,11 @@ func ParseSkyboxResponseAndGenerateHTML(responseFilepath string) {
 	}
 }
 
-func requestImage(prompt string) {
+func RequestImage(prompt string, responseFilepath string) {
 	requestsURL := fmt.Sprintf("%s/requests?api_key=%s", SKYBOX_IMAGINE_URL, SKYBOX_API_KEY)
 
-	// before I prompt
 	prompt = strings.TrimLeft(prompt, " ")
 	words := strings.Split(prompt, " ")
-	// fmt.Printf("Words: %+v", words)
 
 	styleFile := dir + "/tmp/skybox_styles.json"
 	body, err := ioutil.ReadFile(styleFile)
@@ -421,7 +410,6 @@ func requestImage(prompt string) {
 	fmt.Printf("\n\nFirst Word: %s\n", words[0])
 
 	for _, style := range styles {
-		// fmt.Printf("\tSkybox Style: %d\n", style.ID)
 
 		if fmt.Sprintf("%d", style.ID) == words[0] {
 			prompt = strings.Join(words, " ")
@@ -456,7 +444,7 @@ func requestImage(prompt string) {
 
 	d1 := []byte(sb)
 
-	err = os.WriteFile(skyboxResponseFilePath, d1, 0644)
+	err = os.WriteFile(responseFilepath, d1, 0644)
 
 	if err != nil {
 		fmt.Printf("%+v", err)
@@ -538,6 +526,8 @@ func RequestAllStyles() {
 // TODO: update this , so requestImage, passes a info to parseSkyboxResponse
 // Request
 func GenerateSkybox(prompt string) {
-	requestImage(prompt)
-	ParseSkyboxResponseAndGenerateHTML(skyboxResponseFilePath)
+	responseFilePath := skyboxResponseFilePath
+
+	RequestImage(prompt, responseFilePath)
+	ParseSkyboxResponseAndGenerateHTML(responseFilePath)
 }
