@@ -65,16 +65,6 @@ function bringCharactersToLife() {
 
     let dialogText = dialogs[character];
 
-    // if (dialogText === undefined) {
-    //   dialogText = "dialog-1"
-    // }
-    // if (character === undefined) {
-    //   character = "seal"
-    // }
-    // if (dialogText === undefined && character === undefined) {
-    //   // console.log("WTF: " + eventName);
-    //   // return
-    // }
 
     console.log("Event: " + eventName + " | Character: " + character + " | Dialog: " + dialogText)
 
@@ -87,6 +77,12 @@ function bringCharactersToLife() {
 
       // I should create a file:
       // That links to filters in OBS and the position of the pannellum
+    } else if (eventName == "skybox") {
+      let skyboxURL = contents[1];
+      UpdateSkybox(skyboxURL)
+      // we need to parse out the word after eventName
+      // we need to call JS function, that creates a new
+      // Pannellum viewer and Reloads
     } else if (eventName == "office") {
       BeginOffice1()
     } else if (eventName == "lunch") {
@@ -121,6 +117,18 @@ function bringCharactersToLife() {
       // We need a way of trigger ending animations
     }
   })
+}
+
+function UpdateSkybox(url) {
+  viewer.destroy()
+  viewer = pannellum.viewer('panorama', {
+      "type": "equirectangular",
+      "panorama": url,
+      "autoLoad": true,
+      "compass": false,
+      "showControls": false
+  });
+
 }
 
 function sleep(ms) {

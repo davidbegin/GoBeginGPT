@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,6 +23,7 @@ import (
 var dir, _ = utils.GetGrandparentDir()
 var voiceCharacterFile = dir + "/tmp/voice_character.csv"
 var moveRequest = dir + "/tmp/current/move.txt"
+var remixRequestPath = dir + "/tmp/current/remix.txt"
 var gptResp = dir + "/tmp/current/chatgpt_response.txt"
 var duetResp = dir + "/tmp/current/duet.txt"
 var voiceLoc = dir + "/tmp/current/voice.txt"
@@ -93,6 +96,79 @@ func look4VoiceRequests(broadcast chan string) {
 		}
 		<-ticker.C
 	}
+}
+
+func look4RemixRequests(broadcast chan string) {
+	done := make(chan bool)
+
+	ogRemix, err := ioutil.ReadFile(remixRequestPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading OG GPT Response file: %v\n", err)
+		os.Exit(1)
+	}
+
+	go func() {
+		oneSec := time.NewTicker(200 * time.Millisecond)
+		for {
+			<-oneSec.C
+			remixRequest, err := ioutil.ReadFile(remixRequestPath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error reading OG GPT Response file: %v\n", err)
+				os.Exit(1)
+			}
+
+			if string(ogRemix) != string(remixRequest) {
+				fmt.Printf("We are trying to move you to: %s", string(remixRequest))
+				// We need to do do all the Remix shit!!!!!!
+
+				remixID, styleId, prompt := parseRemixRequest(string(remixRequest))
+				skyboxURL := skybox.Remix(remixID, styleId, prompt)
+				broadcast <- fmt.Sprintf("skybox %s", skyboxURL)
+				ogRemix = remixRequest
+			}
+		}
+	}()
+
+	// not sure I wanna block forever here, or if I need to with the GoRoutine Above
+	<-done
+}
+
+// !remix REMIX_ID POTENTIAL_STYLE_ID POTENTIAL_PROMPT
+func parseRemixRequest(content string) (int, int, string) {
+	splitmsg := strings.Fields(content)
+
+	defaultRemixID := 2443168
+	defaultPrompt := "danker"
+
+	remixIdStr := fmt.Sprintf("%d", defaultRemixID)
+	if len(splitmsg) > 0 {
+		remixIdStr = splitmsg[0]
+	}
+	remixID, err := strconv.Atoi(remixIdStr)
+	if err != nil {
+		remixID = defaultRemixID
+	}
+
+	styleIDStr := defaultPrompt
+	if len(splitmsg) > 1 {
+		styleIDStr = splitmsg[1]
+	}
+	styleID, err := strconv.Atoi(styleIDStr)
+
+	if err != nil {
+		styleID = 0
+	}
+
+	promptSkip := 1
+	if styleID != 0 {
+		promptSkip = 2
+	}
+
+	prompt := strings.Join(splitmsg[promptSkip:], " ")
+	// fmt.Println("remixID:", remixID)
+	// fmt.Println("styleID:", styleID)
+	// fmt.Println("prompt:", prompt)
+	return remixID, styleID, prompt
 }
 
 func look4MoveRequests(broadcast chan string) {
@@ -172,6 +248,7 @@ func showAndTell(broadcast chan string) {
 	go look4MoveRequests(broadcast)
 	go look4VoiceRequests(broadcast)
 	go look4GptRequests(broadcast)
+	go look4RemixRequests(broadcast)
 	// go look4DuetRequests(broadcast)
 	go handleBroadcast()
 

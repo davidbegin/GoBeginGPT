@@ -98,7 +98,7 @@ type Response struct {
 	UserImaginariumImageLeft int `json:"user_imaginarium_image_left"`
 }
 
-func Remix(remixID int, styleID int, prompt string) {
+func Remix(remixID int, styleID int, prompt string) string {
 	requestsURL := fmt.Sprintf("%s?api_key=%s", SKYBOX_REMIX_URL, SKYBOX_API_KEY)
 	// TODO: setup logic to choose this
 	// setup, using same prompt + seed + remix w/ different StyleID
@@ -135,7 +135,7 @@ func Remix(remixID int, styleID int, prompt string) {
 	}
 
 	// I could just pass in a bool, for Remix or not
-	ParseSkyboxRemixResponse(skyboxRemixResponseFilePath)
+	return ParseSkyboxRemixResponse(skyboxRemixResponseFilePath)
 }
 
 func requestStatus(id string) Response {
@@ -203,7 +203,10 @@ func requestAll() {
 	log.Printf(sb)
 }
 
-func ParseSkyboxRemixResponse(responseFilepath string) {
+// TODO: Don't panic, returns errors
+func ParseSkyboxRemixResponse(responseFilepath string) string {
+	newSkyboxURL := ""
+
 	skyboxResponse, err := os.ReadFile(responseFilepath)
 	if err != nil {
 		fmt.Print("Error reading Skybox response")
@@ -238,8 +241,8 @@ func ParseSkyboxRemixResponse(responseFilepath string) {
 			// This is a dumb way to name your file
 			err = os.WriteFile(
 				dir+fmt.Sprintf(
-					"/skybox_archive/%s.txt",
-					parsedResponse.Prompt[:10],
+					"/skybox_archive/%d.txt",
+					parsedResponse.ID,
 				),
 				d1,
 				0644,
@@ -250,6 +253,7 @@ func ParseSkyboxRemixResponse(responseFilepath string) {
 			}
 
 			fmt.Printf("Generating Skybox HTML Page: %s\n", request.FileURL)
+			newSkyboxURL = request.FileURL
 			CreateSkyboxPage(request.FileURL)
 			fmt.Print("Finished Generating HTML Page\n")
 			break
@@ -259,9 +263,77 @@ func ParseSkyboxRemixResponse(responseFilepath string) {
 
 		<-timer.C
 	}
+
+	return newSkyboxURL
 }
 
-func ParseSkyboxResponse(responseFilepath string) {
+func ParseSkyboxResponseAndUpdateWebpage(responseFilepath string) {
+	skyboxResponse, err := os.ReadFile(responseFilepath)
+	if err != nil {
+		fmt.Print("Error reading Skybox response")
+		panic(err)
+	}
+
+	var parsedResponse OuterRequest
+	json.Unmarshal(skyboxResponse, &parsedResponse)
+
+	fmt.Print("\n\t ~~~ Checking Status of Skybox generation ~~~\n\n")
+
+	id := fmt.Sprint(parsedResponse.Response.ID)
+	fmt.Printf("\n\tID: %s\n", id)
+
+	for {
+		timer := time.NewTimer(5 * time.Second)
+		request := requestStatus(id)
+
+		if request.Status == "error" {
+			fmt.Printf("\n\nError in skybox generation!\n\n")
+			break
+		}
+
+		if request.FileURL != "" {
+			fmt.Printf("Skybox URL: %s\n", request.FileURL)
+
+			sb := request.FileURL
+			d1 := []byte(sb)
+			err = os.WriteFile(
+				dir+fmt.Sprintf(
+					"/skybox_archive/%s.txt",
+					parsedResponse.Response.Prompt[:10],
+				),
+				d1,
+				0644,
+			)
+			if err != nil {
+				fmt.Printf("Error Writing to skybox Archive: %+v", err)
+				panic(err)
+			}
+
+			fmt.Printf("Generating Skybox HTML Page: %s\n", request.FileURL)
+
+			// we need to send a Websocket message
+			// with the URL inside of it
+			// this message we we will
+
+			// CreateSkyboxPage(request.FileURL)
+			// fmt.Print("Finished Generating HTML Page\n")
+			// chatNotif := fmt.Sprintf("! %d | %s", parsedResponse.Response.ID, parsedResponse.Response.Prompt)
+			// fmt.Printf("ChatNotif: %s\n", chatNotif)
+			// notif := fmt.Sprintf("beginbot \"%s\"", chatNotif)
+			// _, err := utils.RunBashCommand(notif)
+			// if err != nil {
+			// 	log.Fatal(err)
+			// }
+			break
+		}
+
+		fmt.Print("...\n\n")
+
+		<-timer.C
+	}
+}
+
+func ParseSkyboxResponseAndGenerateHTML(responseFilepath string) {
 	skyboxResponse, err := os.ReadFile(responseFilepath)
 	if err != nil {
 		fmt.Print("Error reading Skybox response")
@@ -309,7 +381,6 @@ func ParseSkyboxResponse(responseFilepath string) {
 			fmt.Print("Finished Generating HTML Page\n")
 
 			chatNotif := fmt.Sprintf("! %d | %s", parsedResponse.Response.ID, parsedResponse.Response.Prompt)
-			// chatNotif := fmt.Sprintf("%d | %s", parsedResponse.Response.ID, parsedResponse.Response.Prompt[:15])
 			fmt.Printf("ChatNotif: %s\n", chatNotif)
 			notif := fmt.Sprintf("beginbot \"%s\"", chatNotif)
 			_, err := utils.RunBashCommand(notif)
@@ -468,5 +539,5 @@ func RequestAllStyles() {
 // Request
 func GenerateSkybox(prompt string) {
 	requestImage(prompt)
-	ParseSkyboxResponse(skyboxResponseFilePath)
+	ParseSkyboxResponseAndGenerateHTML(skyboxResponseFilePath)
 }
