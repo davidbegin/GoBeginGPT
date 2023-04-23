@@ -13,20 +13,24 @@ const dialogs = {
 // Curent Bar
 // Current Office
 const pannellumMoveFunctions = {
-  'lunch': {
-    'func': BeginOffice2,
+  'office1': {
+    'func': office,
+    'id': "2443168",
     'url': "https://blockade-platform-production.s3.amazonaws.com/images/imagine/skybox_sterile_office_environment_amazon_hq_style__a8185e0b9204af34__2443168_a8185e0b9204af34__.jpg?ver=1",
   },
   'office': {
-    'func': BeginOffice1,
+    'func': office,
+    'id': "2443168",
     'url': "https://blockade-platform-production.s3.amazonaws.com/images/imagine/skybox_sterile_office_environment_amazon_hq_style__a8185e0b9204af34__2443168_a8185e0b9204af34__.jpg?ver=1",
   },
   'bar':  {
-    'func': BeginBar2,
+    'func': bar,
+    'id': "2449796",
     'url': "https://blockade-platform-production.s3.amazonaws.com/images/imagine/cocktail_bar__b65346d0a00befc9__2449796_b65346d0a00befc9__2449796.jpg?ver=1",
   },
   'bar1': {
-    'func': BeginBar1,
+    'func': bar1,
+    'id': "2451051",
     'url': "https://blockade-platform-production.s3.amazonaws.com/images/imagine/dirty_dingy_bar_biker_dudes_sticky_floors__b5373f30090673cf__2451051_b.jpg?ver=1",
   }
 };
@@ -93,19 +97,27 @@ function bringCharactersToLife() {
     let charDiv = document.getElementById(character)
     let dialog = document.getElementById(dialogText);
 
-    let moveInfo = pannellumMoveFunctions[eventName]
-    if (moveInfo != undefined) {
-      UpdateSkybox(moveInfo.url)
-      // So I have to wait????
-      moveInfo.func()
-    }
-
     if (eventName === "done") {
         console.log("Attemping to Hide dialog")
         hideDialog(charDiv, dialog)
+    } else if (eventName == "goto") {
+      let scene = contents[1];
+      console.log("Scene", scene);
 
-      // I should create a file:
-      // That links to filters in OBS and the position of the pannellum
+      let url = contents[2];
+      if (url != undefined) {
+        console.log("Updating Skybox URL: ", url);
+        UpdateSkybox(url);
+      }
+
+      let moveInfo = pannellumMoveFunctions[scene]
+      if (moveInfo != undefined) {
+        if (url != undefined) {
+          UpdateSkybox(moveInfo.url);
+        }
+        moveInfo.func();
+      }
+
     } else if (eventName == "skybox") {
       let skyboxURL = contents[1];
       UpdateSkybox(skyboxURL)
@@ -176,24 +188,24 @@ function stopAutoRotate() {
 
 // We need to know how to change the panorama image
 
-function BeginOffice2() {
+function office1() {
   viewer.setYaw(0.0)
   viewer.setPitch(0.0)
 }
 
-function BeginBar1() {
+function bar1() {
   viewer.setYaw( 73.62672087808016)
   viewer.setPitch(7.2354649236914845)
 
 }
 
-function BeginBar2() {
+function bar() {
   viewer.setYaw(-109.43920564256291)
   viewer.setPitch(-3.200519950908541)
 }
 
 
-function BeginOffice1() {
+function office() {
   viewer.setYaw(-80.20532504128386)
   viewer.setPitch(8.280357451979064)
 }

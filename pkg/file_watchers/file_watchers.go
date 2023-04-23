@@ -272,16 +272,19 @@ func Look4MoveRequests(broadcast chan string) {
 		oneSec := time.NewTicker(200 * time.Millisecond)
 		for {
 			<-oneSec.C
-			position, err := ioutil.ReadFile(moveRequest)
+			moveRequestData, err := ioutil.ReadFile(moveRequest)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error reading OG GPT Response file: %v\n", err)
 				os.Exit(1)
 			}
 
-			if string(ogPosition) != string(position) {
-				fmt.Printf("We are trying to move you to: %s", string(position))
-				broadcast <- string(position)
-				ogPosition = position
+			if string(ogPosition) != string(moveRequestData) {
+				fmt.Printf("We are trying to move you to: %s", string(moveRequestData))
+
+				//
+				// We are just sending the whole request
+				broadcast <- fmt.Sprintf("goto %s\n", string(moveRequestData))
+				ogPosition = moveRequestData
 			}
 		}
 	}()

@@ -410,10 +410,7 @@ func findStyleID(words []string) int {
 
 	skyboxStyleID := 1
 
-	fmt.Printf("\n\nFirst Word: %s\n", words[0])
-
 	for _, style := range styles {
-
 		if fmt.Sprintf("%d", style.ID) == words[0] {
 			skyboxStyleID = style.ID
 			fmt.Printf("\tCustom Skybox Style: %s\n", style.Name)
